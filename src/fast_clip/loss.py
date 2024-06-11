@@ -452,7 +452,8 @@ class FastCLIPLoss(nn.Module):
         self.mask = {}
 
         logging.info(f"data size: {data_size}, final gamma: {gamma}, gamma_schedule: {gamma_schedule}, "
-                     f"gamma_decay_epochs: {self.gamma_decay_epochs}, rho: {rho}, eps: {self.eps}")
+                     f"gamma_decay_epochs: {self.gamma_decay_epochs}, rho: {rho}, eps: {self.eps}, "
+                     f"multiply_tau: {self.multiply_tau}, cache_mask: {self.cache_mask}")
 
     def adjust_gamma(self, epoch: int):
         if epoch == 0:
@@ -491,10 +492,16 @@ class FastCLIPLoss(nn.Module):
             mask, mask_inv = self.mask[(height, width, offset)]
         return mask, mask_inv
 
-    def pairwise_loss(self, features1: Tuple[Tensor, Tensor], features2: Tuple[Tensor, Tensor],
-                      logit_scale_im: Tensor, mask_diag: bool = False, offset: int = 0,
-                      sim: Optional[Tuple[Tensor, Tensor]] = None, logit_scale_tt: Optional[Tensor] = None,
-                      bounds: Optional[Tuple[Tensor, Tensor]] = None, update_bounds: bool = True):
+    def pairwise_loss(self,
+                      features1: Tuple[Tensor, Tensor],
+                      features2: Tuple[Tensor, Tensor],
+                      logit_scale_im: Tensor,
+                      offset: int = 0,
+                      sim: Optional[Tuple[Tensor, Tensor]] = None,
+                      logit_scale_tt: Optional[Tensor] = None,
+                      bounds: Optional[Tuple[Tensor, Tensor]] = None,
+                      update_bounds: bool = True,
+                      ):
         image_features1, text_features1 = features1[0], features1[1]
         image_features2, text_features2 = features2[0], features2[1]
         if logit_scale_tt is None:
@@ -532,24 +539,23 @@ class FastCLIPLoss(nn.Module):
             mask, mask_inv = mask.T, mask_inv.T
         exp_diff_image = torch.mul(exp_diff_image, mask)
         exp_diff_text = torch.mul(exp_diff_text, mask)
-        if not mask_diag:
-            exp_diff_image = exp_diff_image + mask_inv
-            exp_diff_text = exp_diff_text + mask_inv
 
-        if mask_diag:
-            if batch_size1 <= batch_size2:
-                real_weights_sum = batch_size2 - 1
-            else:
-                real_weights_sum = batch_size2 * (batch_size1 - 1) / batch_size1
+        if batch_size1 <= batch_size2:
+            real_weights_sum = batch_size2 - 1
         else:
-            real_weights_sum = batch_size2
+            real_weights_sum = batch_size2 * (batch_size1 - 1) / batch_size1
         loss_image = torch.sum(exp_diff_image, dim=-1, keepdim=True) / real_weights_sum
         loss_text = torch.sum(exp_diff_text, dim=-1, keepdim=True) / real_weights_sum
 
         return loss_image, loss_text, exp_diff_image, exp_diff_text, diff_image, diff_text, bounds_image, bounds_text
 
-    def local(self, features: Tuple[Tensor, Tensor], indices: Tuple[Tensor, Tensor],
-              remote_features: Tuple[Tensor, Tensor], logit_scale: Tensor, offset: int):
+    def local(self,
+              features: Tuple[Tensor, Tensor],
+              indices: Tuple[Tensor, Tensor],
+              remote_features: Tuple[Tensor, Tensor],
+              logit_scale: Tensor,
+              offset: int,
+              ):
         image_ids, text_ids = indices[0], indices[1]
         u_im = self.u_im[image_ids].to(self.device)
         u_tt = self.u_tt[text_ids].to(self.device)
@@ -579,10 +585,18 @@ class FastCLIPLoss(nn.Module):
 
         return loss1_im, loss1_tt, u_im, u_tt, image_ids, text_ids
 
-    def forward(self, features: Tuple[Tensor, Tensor], remote_features: Tuple[Tensor, Tensor],
-                remote_u: Tuple[Tensor, Tensor], logit_scale: Tensor, offset: int,
-                loss1: Tuple[Tensor, Tensor], u: Tuple[Tensor, Tensor], remote_ids: Tuple[Tensor, Tensor],
-                output_dict: bool = False, **kwargs):
+    def forward(self,
+                features: Tuple[Tensor, Tensor],
+                remote_features: Tuple[Tensor, Tensor],
+                remote_u: Tuple[Tensor, Tensor],
+                remote_ids: Tuple[Tensor, Tensor],
+                loss1: Tuple[Tensor, Tensor],
+                u: Tuple[Tensor, Tensor],
+                logit_scale: Tensor,
+                offset: int,
+                output_dict: bool = False,
+                **kwargs
+                ):
         remote_u_im, remote_u_tt = remote_u[0], remote_u[1]
         remote_u_im_ids = remote_ids[0].squeeze(-1).to(torch.device("cpu"))
         remote_u_tt_ids = remote_ids[1].squeeze(-1).to(torch.device("cpu"))
@@ -660,8 +674,12 @@ class FastCLIPLossIndividual(FastCLIPLoss):
             self.beta1_tau = self.beta1_tau_orig
             self.beta2_tau = self.beta2_tau_orig
 
-    def local(self, features: Tuple[Tensor, Tensor], indices: Tuple[Tensor, Tensor],
-              remote_features: Tuple[Tensor, Tensor], offset: int):
+    def local(self,
+              features: Tuple[Tensor, Tensor],
+              indices: Tuple[Tensor, Tensor],
+              remote_features: Tuple[Tensor, Tensor],
+              offset: int,
+              ):
         image_ids, text_ids = indices[0], indices[1]
         bounds = (self.bound_im[image_ids].clone().to(self.device), self.bound_tt[text_ids].clone().to(self.device))
         u_im = self.u_im[image_ids].to(self.device)
@@ -675,6 +693,7 @@ class FastCLIPLossIndividual(FastCLIPLoss):
 
         loss1_im, loss1_tt, exp_diff_im, exp_diff_tt, diff_im, diff_tt, new_bound_im, new_bound_tt = self.pairwise_loss(
             features, remote_features, 1.0/tau_im, offset=offset, logit_scale_tt=1.0/tau_tt, bounds=bounds)
+        assert new_bound_im is not None and new_bound_tt is not None
 
         g_im = loss1_im.detach()
         g_tt = loss1_tt.detach()
@@ -691,7 +710,7 @@ class FastCLIPLossIndividual(FastCLIPLoss):
             if bad_tt_idx.shape[0] > 0:
                 u_tt[bad_tt_idx] = g_tt[bad_tt_idx].to(u_tt.dtype)
 
-        batch_size = remote_features[0].shape[0] - 1 if self.mask_diag else remote_features[0].shape[0]
+        batch_size = remote_features[0].shape[0] - 1
         # note that here diff is subtracted by new_bounds in pairwise_loss()
         # here we do not divide the gradient by dataset size,
         # since it is equivalent to dividing lr_tau by dataset size
@@ -732,11 +751,19 @@ class FastCLIPLossIndividual(FastCLIPLoss):
 
         return loss1_im, loss1_tt, u_im, u_tt, old_tau_im, old_tau_tt, new_bound_im, new_bound_tt, image_ids, text_ids
 
-    def forward(self, features: Tuple[Tensor, Tensor], remote_features: Tuple[Tensor, Tensor],
-                remote_u: Tuple[Tensor, Tensor], remote_tau: Tuple[Tensor, Tensor], offset: int,
-                loss1: Tuple[Tensor, Tensor], u: Tuple[Tensor, Tensor], multiply_tau: bool,
-                remote_bounds: Tuple[Tensor, Tensor], remote_ids: Tuple[Tensor, Tensor],
-                output_dict: bool = False, **kwargs):
+    def forward(self,
+                features: Tuple[Tensor, Tensor],
+                remote_features: Tuple[Tensor, Tensor],
+                remote_u: Tuple[Tensor, Tensor],
+                remote_tau: Tuple[Tensor, Tensor],
+                remote_bounds: Tuple[Tensor, Tensor],
+                remote_ids: Tuple[Tensor, Tensor],
+                loss1: Tuple[Tensor, Tensor],
+                u: Tuple[Tensor, Tensor],
+                offset: int,
+                output_dict: bool = False,
+                **kwargs
+                ):
         remote_u_im, remote_u_tt = remote_u[0], remote_u[1]
         remote_u_im_ids = remote_ids[0].squeeze(-1).to(torch.device("cpu"))
         remote_u_tt_ids = remote_ids[1].squeeze(-1).to(torch.device("cpu"))
