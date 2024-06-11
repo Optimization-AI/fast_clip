@@ -262,7 +262,7 @@ def main(args):
         replace_linear(model, linear_replacement_cls)
         model = model.to(device)
 
-    if "constant" in args.temperature_scheme:
+    if "constant" in args.temperature_scheme or "individual" in args.temperature_scheme:
         model.logit_scale.requires_grad = False
 
     random_seed(args.seed, args.rank)
@@ -388,7 +388,7 @@ def main(args):
                 optimizer.load_state_dict(checkpoint["optimizer"])
             if scaler is not None and 'scaler' in checkpoint:
                 scaler.load_state_dict(checkpoint['scaler'])
-            if args.sogclr:
+            if args.fastclip:
                 loss.u_im = checkpoint["u_im"]
                 loss.u_tt = checkpoint["u_tt"]
                 if "individual" in args.temperature_scheme:
@@ -436,7 +436,7 @@ def main(args):
                     group, lr_l, args.warmup, total_steps,
                     cooldown_steps, args.lr_cooldown_power, args.lr_cooldown_end)
             elif lr_scheduler == "step_thresh":
-                sche = step_lr_thresh(group, lr_l, 0, [0.03], [1/3], model)
+                sche = step_lr_thresh(group, lr_l, 0, [0.03], [1/3], model=model if not hasattr(model, "module") else model.module)
             else:
                 logging.error(
                     f'Unknown scheduler, {lr_scheduler}. Available options are: cosine, const, const-cooldown, step_thresh.')
@@ -538,7 +538,7 @@ def main(args):
             ):
                 torch.save(
                     tau_dict,
-                    os.path.join(args.checkpoint_path, f"epoch_{completed_epoch}_u_rank_{args.rank}.pt"),
+                    os.path.join(args.checkpoint_path, f"epoch_{completed_epoch}_tau_rank_{args.rank}.pt"),
                 )
         if args.save_logs:
             checkpoint_dict = {
