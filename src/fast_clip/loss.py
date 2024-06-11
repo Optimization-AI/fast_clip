@@ -660,7 +660,6 @@ class FastCLIPLossIndividual(FastCLIPLoss):
         self.v_grad_tau_tt = torch.zeros(data_size, device=torch.device("cpu")).reshape(-1, 1)
 
         self.tau_min, self.tau_max = 0.01, 1.0
-        self.lr_tau_orig = lr_tau
         self.lr_tau = lr_tau
 
         self.bound_im = torch.zeros(data_size, device=torch.device("cpu")).reshape(-1, 1)
@@ -730,10 +729,8 @@ class FastCLIPLossIndividual(FastCLIPLoss):
         v_hat_grad_tau_im = v_grad_tau_im / (1.0 - self.beta2_tau ** (self.epoch + 1))
         v_hat_grad_tau_tt = v_grad_tau_tt / (1.0 - self.beta2_tau ** (self.epoch + 1))
 
-        lr_tau_im = self.get_lr_tau(tau_im)
-        tau_im = (tau_im - lr_tau_im * m_hat_grad_tau_im / (v_hat_grad_tau_im + self.eps_tau)).clamp_(min=self.tau_min, max=self.tau_max)
-        lr_tau_tt = self.get_lr_tau(tau_tt)
-        tau_tt = (tau_tt - lr_tau_tt * m_hat_grad_tau_tt / (v_hat_grad_tau_tt + self.eps_tau)).clamp_(min=self.tau_min, max=self.tau_max)
+        tau_im = (tau_im - self.lr_tau * m_hat_grad_tau_im / (v_hat_grad_tau_im + self.eps_tau)).clamp_(min=self.tau_min, max=self.tau_max)
+        tau_tt = (tau_tt - self.lr_tau * m_hat_grad_tau_tt / (v_hat_grad_tau_tt + self.eps_tau)).clamp_(min=self.tau_min, max=self.tau_max)
         old_tau_im = tau_im.clone()
         old_tau_tt = tau_tt.clone()
 
