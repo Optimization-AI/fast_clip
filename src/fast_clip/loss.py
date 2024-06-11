@@ -547,7 +547,7 @@ class FastCLIPLoss(nn.Module):
         loss_image = torch.sum(exp_diff_image, dim=-1, keepdim=True) / real_weights_sum
         loss_text = torch.sum(exp_diff_text, dim=-1, keepdim=True) / real_weights_sum
 
-        return loss_image, loss_text, exp_diff_image, exp_diff_text, diff_image, diff_text, bounds_image, bounds_text
+        return loss_image, loss_text, sim_image, sim_text, exp_diff_image, exp_diff_text, diff_image, diff_text, bounds_image, bounds_text
 
     def local(self,
               features: Tuple[Tensor, Tensor],
@@ -560,7 +560,7 @@ class FastCLIPLoss(nn.Module):
         u_im = self.u_im[image_ids].to(self.device)
         u_tt = self.u_tt[text_ids].to(self.device)
 
-        loss1_im, loss1_tt, _, _, _, _, _, _ = self.pairwise_loss(
+        loss1_im, loss1_tt, sim_im, sim_tt, _, _, _, _, _, _ = self.pairwise_loss(
             features, remote_features, logit_scale, offset=offset)
 
         g_im = loss1_im.detach()
@@ -583,7 +583,7 @@ class FastCLIPLoss(nn.Module):
         image_ids = image_ids.unsqueeze(-1).to(device=self.device, dtype=image_ids.dtype, non_blocking=True)
         text_ids = text_ids.unsqueeze(-1).to(device=self.device, dtype=text_ids.dtype, non_blocking=True)
 
-        return loss1_im, loss1_tt, u_im, u_tt, image_ids, text_ids
+        return loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, image_ids, text_ids
 
     def forward(self,
                 features: Tuple[Tensor, Tensor],
@@ -592,6 +592,7 @@ class FastCLIPLoss(nn.Module):
                 remote_ids: Tuple[Tensor, Tensor],
                 loss1: Tuple[Tensor, Tensor],
                 u: Tuple[Tensor, Tensor],
+                sim: Tuple[Tensor, Tensor],
                 logit_scale: Tensor,
                 offset: int,
                 output_dict: bool = False,
@@ -605,7 +606,8 @@ class FastCLIPLoss(nn.Module):
         self.u_im[remote_u_im_ids] = remote_u_im.to(torch.device("cpu"))
         self.u_tt[remote_u_tt_ids] = remote_u_tt.to(torch.device("cpu"))
 
-        loss2_im, loss2_tt, _, _, _, _, _, _ = self.pairwise_loss(remote_features, features, logit_scale, offset=offset)
+        loss2_im, loss2_tt, _, _, _, _, _, _, _, _ = self.pairwise_loss(
+            remote_features, features, logit_scale, offset=offset, sim=sim)
 
         partial_grad1_im = loss1_im / (u_im + self.eps)
         partial_grad1_tt = loss1_tt / (u_tt + self.eps)
@@ -691,7 +693,7 @@ class FastCLIPLossIndividual(FastCLIPLoss):
         v_grad_tau_im = self.v_grad_tau_im[image_ids].to(self.device)
         v_grad_tau_tt = self.v_grad_tau_tt[text_ids].to(self.device)
 
-        loss1_im, loss1_tt, exp_diff_im, exp_diff_tt, diff_im, diff_tt, new_bound_im, new_bound_tt = self.pairwise_loss(
+        loss1_im, loss1_tt, sim_im, sim_tt, exp_diff_im, exp_diff_tt, diff_im, diff_tt, new_bound_im, new_bound_tt = self.pairwise_loss(
             features, remote_features, 1.0/tau_im, offset=offset, logit_scale_tt=1.0/tau_tt, bounds=bounds)
         assert new_bound_im is not None and new_bound_tt is not None
 
@@ -749,7 +751,7 @@ class FastCLIPLossIndividual(FastCLIPLoss):
         image_ids = image_ids.unsqueeze(-1).to(device=self.device, dtype=torch.int64, non_blocking=True)
         text_ids = text_ids.unsqueeze(-1).to(device=self.device, dtype=torch.int64, non_blocking=True)
 
-        return loss1_im, loss1_tt, u_im, u_tt, old_tau_im, old_tau_tt, new_bound_im, new_bound_tt, image_ids, text_ids
+        return loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, old_tau_im, old_tau_tt, new_bound_im, new_bound_tt, image_ids, text_ids
 
     def forward(self,
                 features: Tuple[Tensor, Tensor],
@@ -760,6 +762,7 @@ class FastCLIPLossIndividual(FastCLIPLoss):
                 remote_ids: Tuple[Tensor, Tensor],
                 loss1: Tuple[Tensor, Tensor],
                 u: Tuple[Tensor, Tensor],
+                sim: Tuple[Tensor, Tensor],
                 offset: int,
                 output_dict: bool = False,
                 **kwargs
@@ -773,8 +776,8 @@ class FastCLIPLossIndividual(FastCLIPLoss):
         self.u_tt[remote_u_tt_ids] = remote_u_tt.to(torch.device("cpu"))
         remote_tau_im, remote_tau_tt = remote_tau[0], remote_tau[1]
 
-        loss2_im, loss2_tt, _, _, _, _, _, _ = self.pairwise_loss(
-            remote_features, features, 1.0/remote_tau_im, offset=offset,
+        loss2_im, loss2_tt, _, _, _, _, _, _, _, _ = self.pairwise_loss(
+            remote_features, features, 1.0/remote_tau_im, offset=offset, sim=sim,
             logit_scale_tt=1.0/remote_tau_tt, bounds=remote_bounds, update_bounds=False)
 
         partial_grad1_im = loss1_im / (u_im + self.eps)

@@ -115,12 +115,12 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
                     features = [model_out["image_features"], model_out["text_features"]]
                     remote_features = all_gather_tuple_tensor(features, args.world_size)
                     if "global" in args.temperature_scheme:
-                        loss1_im, loss1_tt, u_im, u_tt, image_ids, text_ids = loss.local(
+                        loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, image_ids, text_ids = loss.local(
                             features, indices, remote_features, logit_scale, offset)
                         remote_tau = None
                         remote_bounds = None
                     elif "individual" in args.temperature_scheme:
-                        loss1_im, loss1_tt, u_im, u_tt, tau_im, tau_tt, bound_im, bound_tt, image_ids, text_ids = loss.local(
+                        loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, tau_im, tau_tt, bound_im, bound_tt, image_ids, text_ids = loss.local(
                             features, indices, remote_features, offset)
                         remote_tau = all_gather_tuple_tensor([tau_im, tau_tt], args.world_size)
                         remote_bounds = all_gather_tuple_tensor([bound_im, bound_tt], args.world_size)
@@ -129,10 +129,12 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
                     remote_u = all_gather_tuple_tensor([u_im, u_tt], args.world_size)
                     remote_ids = all_gather_tuple_tensor([image_ids, text_ids], args.world_size)
                     u = (u_im, u_tt)
+                    # here sim_im is local_im vs. global_tt, sim_tt is local_tt vs. global_im
+                    sim = (sim_tt.T, sim_im.T)
                     model_out.update(
                         {"features": features, "remote_features": remote_features, "remote_u": remote_u, "remote_ids": remote_ids})
                     model_out.update(
-                        {"offset": offset, "loss1": (loss1_im, loss1_tt), "u": u})
+                        {"offset": offset, "loss1": (loss1_im, loss1_tt), "u": u, "sim": sim})
                     model_out.update({"remote_tau": remote_tau, "remote_bounds": remote_bounds})
                 losses = loss(**model_out, output_dict=True)
 
