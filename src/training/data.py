@@ -1,16 +1,19 @@
 import logging
+import math
+import braceexpand
 from dataclasses import dataclass
 from multiprocessing import Value
+import functools
 
 import numpy as np
 import pandas as pd
 import torch
 import torchvision.datasets as datasets
+import webdataset as wds
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 from torch.utils.data.distributed import DistributedSampler
-
-from libauc.datasets.webdataset import get_wds_dataset_fastclip as get_wds_dataset
+from libauc.datasets import WebDataset
 
 try:
     import horovod.torch as hvd
@@ -107,6 +110,70 @@ def get_imagenet(args, preprocess_fns, split):
     )
 
     return DataInfo(dataloader=dataloader, sampler=sampler)
+
+
+def expand_urls(urls, weights=None):
+    if weights is None:
+        expanded_urls = wds.shardlists.expand_urls(urls)
+        return expanded_urls, None
+    if isinstance(urls, str):
+        urllist = urls.split("::")
+        weights = weights.split('::')
+        assert len(weights) == len(urllist),\
+            f"Expected the number of data components ({len(urllist)}) and weights({len(weights)}) to match."
+        weights = [float(weight) for weight in weights]
+        all_urls, all_weights = [], []
+        for url, weight in zip(urllist, weights):
+            expanded_url = list(braceexpand.braceexpand(url))
+            expanded_weights = [weight for _ in expanded_url]
+            all_urls.extend(expanded_url)
+            all_weights.extend(expanded_weights)
+        return all_urls, all_weights
+    else:
+        all_urls = list(urls)
+        return all_urls, weights
+
+
+def get_wds_dataset(args, preprocess_img, is_train, epoch=0, tokenizer=None):
+    input_shards = args.train_data if is_train else args.val_data
+    num_samples = args.train_num_samples if is_train else args.val_num_samples or 0
+    return_index = True
+
+    def tokenize(tokenizer, text):
+        return tokenizer(text)[0]
+
+    dataset = WebDataset(input_shards, is_train, args.batch_size, preprocess_img, args.seed, epoch,
+                         functools.partial(tokenize, tokenizer) if tokenizer is not None else None,
+                         return_index)
+    if is_train:
+        num_shards = len(expand_urls(input_shards)[0])
+        assert num_shards >= args.workers * args.world_size, 'number of shards must be >= total workers'
+        # roll over and repeat a few samples to get same number of full batches on each node
+        round_fn = math.ceil
+        global_batch_size = args.batch_size * args.world_size
+        num_batches = round_fn(num_samples / global_batch_size)
+        num_workers = max(1, args.workers)
+        num_worker_batches = round_fn(num_batches / num_workers)  # per dataloader worker
+        num_batches = num_worker_batches * num_workers
+        num_samples = num_batches * global_batch_size
+        dataset = dataset.with_epoch(num_worker_batches)  # each worker is iterating over this
+    else:
+        # last batches are partial, eval is done on single (master) node
+        num_batches = math.ceil(num_samples / args.batch_size)
+
+    dataloader = wds.WebLoader(
+        dataset,
+        batch_size=None,
+        shuffle=False,
+        num_workers=args.workers,
+        persistent_workers=args.workers > 0,
+    )
+
+    # add meta-data to dataloader instance for convenience
+    dataloader.num_batches = num_batches
+    dataloader.num_samples = num_samples
+
+    return DataInfo(dataloader=dataloader, shared_epoch=dataset.shared_epoch)
 
 
 def get_csv_dataset(args, preprocess_fn, is_train, epoch=0, tokenizer=None):
