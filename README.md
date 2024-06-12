@@ -49,6 +49,7 @@ srun python -u src/training/main.py \
     --lr 1e-3 --lr_tau 2e-4 --lr_tau_scheduler step_thresh --rho 6.5 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
+
 To run OpenCLIP, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
@@ -68,6 +69,7 @@ srun python -u src/training/main.py \
     --gather-with-grad \
     --lr 1e-3
 ```
+
 To run FastCLIP-v0, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
@@ -88,6 +90,7 @@ srun python -u src/training/main.py \
     --lr 1e-3 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
+
 To run FastCLIP-v1, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
@@ -108,6 +111,7 @@ srun python -u src/training/main.py \
     --lr 1e-3 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
+
 To run FastCLIP-v2, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
@@ -128,7 +132,7 @@ srun python -u src/training/main.py \
     --lr 1e-3 --lr_tau 0.0133 --lr_tau_scheduler const --temperature 0.03 --rho 7.0 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
-**Non-slurm Training**: For non-slurm training, please set `master_addr` to `127.0.0.1`, change `srun python -u src/training/main.py` to `python -u src/training/main.py`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
 
 ### Evaluation
 
@@ -168,4 +172,4 @@ srun python -u src/training/main.py \
 ```
 **Datacomp**: For evaluation on Datacomp Benchmark, we refer the readers to the `Evaluation` section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
-**Non-slurm Training**: For non-slurm training, please set `master_addr` to `127.0.0.1`, change `srun python -u src/training/main.py` to `python -u src/training/main.py`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
