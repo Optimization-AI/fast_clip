@@ -132,7 +132,7 @@ srun python -u src/training/main.py \
 
 ### Evaluation
 
-**ImageNet-1k**: The following is a sample slurm script to evaluate trained CLIP model `./logs/medium_fastclipv3/checkpoints/epoch_37.pt` on ImageNet-1k.
+**ImageNet-1k**: The following is a sample slurm script to evaluate a trained CLIP model (specified by `--resume`) on ImageNet-1k.
 ```bash
 #!/bin/bash -x
 #SBATCH --time=01:00:00
