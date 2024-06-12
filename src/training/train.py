@@ -76,7 +76,7 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
     rank = torch.distributed.get_rank()
     offset = rank * args.batch_size
 
-    data['train'].set_epoch(epoch)  # set epoch in process safe manner via sampler or shared_epoch
+    data['train'].set_epoch(0)
     dataloader = data['train'].dataloader
     num_batches_per_epoch = dataloader.num_batches // args.accum_freq
     sample_digits = math.ceil(math.log(dataloader.num_samples + 1, 10))
