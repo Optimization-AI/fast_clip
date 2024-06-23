@@ -1,6 +1,38 @@
 <h1 align="center">FastCLIP: A Suite of Optimization Techniques to <br> Accelerate CLIP Training with Limited Resources</h1>
 
-Existing studies of training state-of-the-art Contrastive Language-Image Pretraining (CLIP) models on large-scale data involve hundreds of or even thousands of GPUs due to the requirement of a large batch size. However, such a large amount of resources is not accessible to most people. While advanced compositional optimization techniques for optimizing global contrastive losses have been demonstrated effective for removing the requirement of large batch size, their performance on large-scale data remains underexplored and not optimized. To bridge the gap, this paper explores several aspects of CLIP training with *limited resources* (e.g., up to tens of GPUs). First, we introduce FastCLIP, a general CLIP training framework built on advanced compositional optimization techniques while designed and optimized for the **distributed setting**. Our framework is equipped with an efficient gradient reduction strategy to reduce communication overhead. Second, to further boost training efficiency, we investigate three components of the framework from an optimization perspective: the schedule of the inner learning rate, the update rules of the temperature parameter and the model parameters, respectively. Experiments on different strategies for each component shed light on how to conduct CLIP training more efficiently. Finally, we benchmark the performance of FastCLIP and the state-of-the-art training baseline (OpenCLIP) on different compute scales up to 32 GPUs on 8 nodes, and three data scales ranging from 2.7 million, 9.1 million to 315 million image-text pairs to demonstrate the significant improvement of FastCLIP in the resource-limited setting.
+**TL;DR**: We propose FastCLIP, a CLIP training framework that i) does not require a large batch size to achieve good performance (limited-resource setting), and ii) is more communication-efficient than OpenCLIP. We investigate three optimization componentes of FastCLIP and compare different strategies for each component. Finally, we conduct experiments on CC3M, CC12M and LAION400M to demonstrate the effectiveness of FastCLIP.
+
+## Introduction
+
+### The Proposed FastCLIP Framework
+
+Vanilla mini-batch based methods for self-supervised contrastive learning (e.g., CLIP) are known to require a large batch size to obtain satisfactory performance. Recently, Yuan el al. [(2023)](#references) proposed an algorithm named SogCLR to address the large batch size issue, which leverages **finite-sum coupled compositional optimization (FCCO)** techniques. A key feature of compositional optimization is the **inner and outer steps** where the inner steps maintain and update a sequence of estimators to track the inner functions on the solution path, which can be interpreted as an SGD update with a learning rate called the inner learning rate.
+
+In order to scale up the advanced optimization algorithms for optimizing global contrastive losses of CLIP training on large-scale data with limited compute resources, we introduce FastCLIP, a distributed training framework in the data-parallel setting. The algorithmic design is based on SogCLR, and the implementation is based on OpenCLIP [(Ilharco el al. 2021)](#references). A novel gradient reduction strategy is designed so that it requires less communication than OpenCLIP. This distributed training framework lays the foundation for scaling up CLIP training with limited resources.
+
+To further boost the efficiency of our framework, we investigate its three aspects from an optimization perspective: the schedule of the inner learning rate (LR) of compositional optimization, the update rule of the temperature parameter, and the update rule of the model parameters, respectively.
+
+Moreover, we compare the performance of FastCLIP and OpenCLIP on three data scales and four compute scales. The data scales include 2.7 million (CC3M), 9.1 million (CC12M), and 315 million (LAION400M) image-text pairs (our downloaded versions of these datasets are smaller than their original versions because some web links are not valid anymore). The compute scales include 1, 2, 4, and 8 nodes, with 4 GPUs on each node.
+
+### Experiment Results
+
+Here we only present part of the results of OpenCLIP vs. FastCLIP-v3, which is one of several algorithms in the FastCLIP framework. For more results OpenCLIP vs. FastCLIP-v3, and results of different optimization components of FastCLIP, please refer to our paper. The following figure is the average of ImageNet and its variants (ImageNet-Sketch, ImageNet-v2, ImageNet-A, ImageNet-O, ImageNet-R and ObjectNet) curves of OpenCLIP and FastCLIP-v3 in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings. From the results we can see that FastCLIP-v3 has a significant improvement and speedup over OpenCLIP.
+
+<p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
+
+In the following figure, (a) and (b) are the average of ImageNet and its variants of OpenCLIP and FastCLIP-v3 across different number of nodes in the medium-scale and large-scale settings, respectively. While (c) is the ImageNet Top1 accuracy of OpenCLIP and FastCLIP-v3 in the xlarge-scale setting (LAION400M, batch size 5120). From the results we can see that FastCLIP-v3 outperforms OpenCLIP by a large margin. Moreover, from (a) and (b) we observe that the performance of FastCLIP-v3 plateaus at 2 nodes, which verifies that FastCLIP does not require a large amount of computing resources.
+
+<p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
+
+Besides performance on downstream tasks, we also compare training time of OpenCLIP and FastCLIP. The following figure shows the training time of OpenCLIP and three algorithms in the FastCLIP framework in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Each bar is divided into three parts (from top to bottom): computation, pure communication (not overlapped with computation), and others. Subfigures (c) and (d) plot the communication time per iteration. Each bar is divided into two parts (from top to bottom): communication overlapped with computation and pure communication. From subfigures (a) and (b) we can see that the running time of FastCLIP is similar to OpenCLIP when the number of nodes is small (1 and 2), and becomes shorter than OpenCLIP when the number of nodes scales up (4 and 8). This is because OpenCLIP has a longer communication time on 4 and 8 nodes (subfigures (c) and (d)), which demonstrates the effectiveness of our efficient gradient computation/communication strategy.
+
+<p align="center"><img alt="OpenCLIP vs. FastCLIP, Training time" src="./assets/openclip_fastclip_time_nodes.png" width="600"/></p>
+
+### References
+
+Gabriel Ilharco, Mitchell Wortsman, Ross Wightman, Cade Gordon, Nicholas Carlini, Rohan Taori, Achal Dave, Vaishaal Shankar, Hongseok Namkoong, John Miller, Hannaneh Hajishirzi, Ali Farhadi, and Ludwig Schmidt. Openclip. https://doi.org/10.5281/zenodo.5143773, July 2021. URL https://doi.org/10.5281/zenodo.5143773.
+
+Zhuoning Yuan, Yuexin Wu, Zi-Hao Qiu, Xianzhi Du, Lijun Zhang, Denny Zhou, and Tianbao Yang. Provable stochastic optimization for global contrastive learning: Small batch does not harm performance. *Proceedings of the 39th International Conference on Machine Learning*, volume 162 of *Proceedings of Machine Learning Research*, pages 25760–25782. PMLR, 17–23 Jul 2022. URL https://proceedings.mlr.press/v162/yuan22b.html.
 
 ## Instructions
 
