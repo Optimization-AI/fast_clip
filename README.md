@@ -28,11 +28,20 @@ Besides performance on downstream tasks, we also compare training time of OpenCL
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP, Training time" src="./assets/openclip_fastclip_time_nodes.png" width="600"/></p>
 
-## Instructions
+## Getting Started
+
+### Environment Setup
+
+To set up an environment for training, please create a new environment by running the following commands.
+```bash
+conda create -n fastclip python=3.11
+conda activate fastclip
+pip install -r requirements-training.txt
+```
 
 ### Training
 
-For training, please first create an environment using [requirements-training.txt](./requirements-training.txt). The following is a sample slurm script to run FastCLIP-v3 on cc3m using 2 nodes and 4 GPUs per node.
+We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. The following is a sample slurm script to run FastCLIP-v3 on cc3m using 2 nodes and 4 GPUs per node.
 ```bash
 #!/bin/bash -x
 #SBATCH --time=2-00:00:00
@@ -196,6 +205,6 @@ srun python -u src/training/main.py \
     --name eval_medium_fastclipv3_epoch_37 \
     --seed 2024
 ```
-**Datacomp**: For evaluation on Datacomp Benchmark, we refer the readers to the `Evaluation` section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
+**Datacomp**: For evaluation on Datacomp Benchmark, please refer to the `Evaluation` section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
-**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
