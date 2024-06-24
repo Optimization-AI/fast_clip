@@ -2,6 +2,15 @@
 
 **TL;DR**: We propose FastCLIP, a CLIP training framework that i) does not require a large batch size to achieve good performance (limited-resource setting), and ii) is more communication-efficient than OpenCLIP. We investigate three optimization componentes of FastCLIP and compare different strategies for each component. Finally, we conduct experiments on CC3M, CC12M and LAION400M to demonstrate the effectiveness of FastCLIP.
 
+**Table of Contents**
+- [Introduction](#introduction)
+    - [The Proposed FastCLIP Framework](#the-proposed-fastclip-framework)
+    - [Experiment Results](#experiment-results)
+- [Getting Started](#getting-started)
+    - [Environment Setup](#environment-setup)
+    - [Training](#training)
+    - [Evaluation](#evaluation)
+
 ## Introduction
 
 ### The Proposed FastCLIP Framework
