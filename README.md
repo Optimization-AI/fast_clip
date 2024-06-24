@@ -32,12 +32,18 @@ Besides performance on downstream tasks, we also compare training time of OpenCL
 
 ### Environment Setup
 
-To set up an environment for training, please create a new environment by running the following commands.
-```bash
-conda create -n fastclip python=3.11
-conda activate fastclip
-pip install -r requirements-training.txt
-```
+To set up the environment for training, please
+1. Download this repository:
+    ```bash
+    git clone https://github.com/Optimization-AI/fast_clip.git
+    cd fast_clip
+    ```
+2. Create a new environment:
+    ```bash
+    conda create -n fastclip python=3.11
+    conda activate fastclip
+    pip install -r requirements-training.txt
+    ```
 
 ### Training
 
