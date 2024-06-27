@@ -2,6 +2,15 @@
 
 **TL;DR**: We explore several aspects of CLIP training with *limited resources* (e.g., up to tens of GPUs). First, we introduce FastCLIP, a general CLIP training framework built on advanced compositional optimization techniques while designed and optimized for the **distributed setting**. Second, to further boost training efficiency, we investigate three components of the framework from an optimization perspective: the schedule of the inner learning rate, the update rules of the temperature parameter and the model parameters, respectively. Finally, we benchmark the performance of FastCLIP and OpenCLIP on different compute scales (up to 32 GPUs on 8 nodes), and three data scales (CC3M, CC12M and LAION400M).
 
+**Table of Contents**
+- [Introduction](#introduction)
+    - [The Proposed FastCLIP Framework](#the-proposed-fastclip-framework)
+    - [Experiment Results](#experiment-results)
+- [Getting Started](#getting-started)
+    - [Environment Setup](#environment-setup)
+    - [Training](#training)
+    - [Evaluation](#evaluation)
+
 ## Introduction
 
 ### The Proposed FastCLIP Framework
@@ -57,12 +66,18 @@ The following figure shows the training time in the medium-scale and large-scale
 
 ### Environment Setup
 
-To set up an environment for training, please create a new environment by running the following commands.
-```bash
-conda create -n fastclip python=3.11
-conda activate fastclip
-pip install -r requirements-training.txt
-```
+To set up the environment for training, please
+1. Download this repository:
+    ```bash
+    git clone https://github.com/Optimization-AI/fast_clip.git
+    cd fast_clip
+    ```
+2. Create a new environment:
+    ```bash
+    conda create -n fastclip python=3.11
+    conda activate fastclip
+    pip install -r requirements-training.txt
+    ```
 
 ### Training
 
