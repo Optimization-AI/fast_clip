@@ -1,30 +1,55 @@
 <h1 align="center">FastCLIP: A Suite of Optimization Techniques to <br> Accelerate CLIP Training with Limited Resources</h1>
 
-**TL;DR**: We propose FastCLIP, a CLIP training framework that i) does not require a large batch size to achieve good performance (limited-resource setting), and ii) is more communication-efficient than OpenCLIP. We investigate three optimization componentes of FastCLIP and compare different strategies for each component. Finally, we conduct experiments on CC3M, CC12M and LAION400M to demonstrate the effectiveness of FastCLIP.
+**TL;DR**: We explore several aspects of CLIP training with *limited resources* (e.g., up to tens of GPUs). First, we introduce FastCLIP, a general CLIP training framework built on advanced compositional optimization techniques while designed and optimized for the **distributed setting**. Second, to further boost training efficiency, we investigate three components of the framework from an optimization perspective: the schedule of the inner learning rate, the update rules of the temperature parameter and the model parameters, respectively. Finally, we benchmark the performance of FastCLIP and OpenCLIP on different compute scales (up to 32 GPUs on 8 nodes), and three data scales (CC3M, CC12M and LAION400M).
 
 ## Introduction
 
 ### The Proposed FastCLIP Framework
 
-Vanilla mini-batch based methods for self-supervised contrastive learning (e.g., CLIP) are known to require a large batch size to obtain satisfactory performance. Recently, the SogCLR algorithm is proposed to address the large batch size issue, which leverages **finite-sum coupled compositional optimization (FCCO)** techniques. A key feature of compositional optimization is the **inner and outer steps** where the inner steps maintain and update a sequence of estimators to track the inner functions on the solution path, which can be interpreted as an SGD update with a learning rate called the inner learning rate.
+The FastCLIP framework is a general CLIP training framework. It includes 4 algorithms which we name FastCLIP-v0 to FastCLIP-v3. The pseudo-code of FastCLIP is presented below.
 
-In order to scale up the advanced optimization algorithms for optimizing global contrastive losses of CLIP training on large-scale data with limited compute resources, we introduce FastCLIP, a distributed training framework in the data-parallel setting. The algorithmic design is based on SogCLR, and the implementation is based on OpenCLIP. A novel gradient reduction strategy is designed so that it requires less communication than OpenCLIP. This distributed training framework lays the foundation for scaling up CLIP training with limited resources.
+<p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
-To further boost the efficiency of our framework, we investigate its three aspects from an optimization perspective: the schedule of the inner learning rate (LR) of compositional optimization, the update rule of the temperature parameter, and the update rule of the model parameters, respectively.
+FastCLIP-v0 to FastCLIP-v3 mainly differ in loss computation and temperature update (Line 9 and Line 11). Specifically, FastCLIP-v0 and FastCLIP-v1 optimizes the Global Contrastive Loss (GCL), which is first used by SogCLR:
+$$\frac{\tau}{|\mathcal{S}|} \sum\nolimits_{i\in \mathcal{S}} \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)\right).   \tag{GCL}$$
+The difference between v0 and v1 is that in v0 the temperature parameter $\tau$ is learnable and is updated using gradient method, while in v1 the temperature parameter is set to a constant. FastCLIP-v2 optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR:
+$$\begin{aligned}
+        \min_{\tau_1, \tau_2\geq \tau_0}\frac{1}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} &\left(\tau_{1, i}\cdot \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau_{1, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right.\\[-5pt]
+        &\;\;\left.+ \tau_{2, i}\cdot \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau_{2, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right),     \tag{RGCL}
+    \end{aligned}$$
+where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_1 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. In FastCLIP-v2, the temperature parameter is also learnable. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
+$$\min_{\tau\geq \tau_0}\frac{\tau}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)\right) + 2\rho\tau.    \tag{RGCL-g}$$
+The main difference between RGCL and RGCL-g is that RGCL-g unifies the individual temperature parameter in RGCL into a single global temperature. In FastCLIP-v3, the temperature parameter is also learnable. In the following table we provide comparison between different algorithms.
 
-Moreover, we compare the performance of FastCLIP and OpenCLIP on three data scales and four compute scales. The data scales include 2.7 million (CC3M), 9.1 million (CC12M), and 315 million (LAION400M) image-text pairs (our downloaded versions of these datasets are smaller than their original versions because some web links are not valid anymore). The compute scales include 1, 2, 4, and 8 nodes, with 4 GPUs on each node.
+<style>
+    tr:nth-child(4) { background: rgb(240, 240, 240); }
+    tr:nth-child(5) { background: rgb(240, 240, 240); }
+    tr:nth-child(6) { background: rgb(240, 240, 240); }
+    tr:nth-child(7) { background: rgb(240, 240, 240); }
+</style>
+| Algorithm | Loss | FCCO | Distributed | Inner LR Schedule | Temperature Scheme |
+| --- | --- | --- | --- | --- | --- |
+| OpenCLIP | MBCL | :x: | :white_check_mark: | N/A | G, Learnable |
+| SogCLR | GCL | :white_check_mark: | :x: | Constant | G, Constant |
+| iSogCLR | RGCL | :white_check_mark: | :x: | Constant | I, Learnable |
+| FastCLIP-v0 | GCL | :white_check_mark: | :white_check_mark: | Cosine | G, Learnable |
+| FastCLIP-v1 | GCL | :white_check_mark: | :white_check_mark: | Cosine | G, Constant |
+| FastCLIP-v2 | RGCL | :white_check_mark: | :white_check_mark: | Cosine | I, Learnable |
+| FastCLIP-v3 | RGCL-g | :white_check_mark: | :white_check_mark: | Cosine | G, Learnable |
+
+Note that OpenCLIP uses the Mini-Batch Contrastive Loss which we omit here for brevity. FCCO denotes finite-sum coupled compositional optimization. Inner LR Schedule denotes the schedule for $\gamma_t$ in Eqn. (2) in Algorithm 1. In Temperature Scheme, G means global temperature while I means individual temperature.
 
 ### Experiment Results
 
-Here we only present part of the results of OpenCLIP vs. FastCLIP-v3, which is one of several algorithms in the FastCLIP framework. For more results OpenCLIP vs. FastCLIP-v3, and results of different optimization components of FastCLIP, please refer to our paper. The following figure is the average of ImageNet and its variants (ImageNet-Sketch, ImageNet-v2, ImageNet-A, ImageNet-O, ImageNet-R and ObjectNet) curves of OpenCLIP and FastCLIP-v3 in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings. From the results we can see that FastCLIP-v3 has a significant improvement and speedup over OpenCLIP.
+Here we only present part of the results of OpenCLIP vs. FastCLIP-v3. For more results please refer to our paper. The following figure is the average of ImageNet and its variants curves in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings. From the results we can see that FastCLIP-v3 has a significant improvement and speedup over OpenCLIP.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
 
-In the following figure, (a) and (b) are the average of ImageNet and its variants of OpenCLIP and FastCLIP-v3 across different number of nodes in the medium-scale and large-scale settings, respectively. While (c) is the ImageNet Top1 accuracy of OpenCLIP and FastCLIP-v3 in the xlarge-scale setting (LAION400M, batch size 5120). From the results we can see that FastCLIP-v3 outperforms OpenCLIP by a large margin. Moreover, from (a) and (b) we observe that the performance of FastCLIP-v3 plateaus at 2 nodes, which verifies that FastCLIP does not require a large amount of computing resources.
+In the following figure, (a) and (b) are the average of ImageNet and its variants across different number of nodes in the medium-scale and large-scale settings, respectively. while (c) is the ImageNet Top1 accuracy in the xlarge-scale setting (LAION400M, batch size 5120). From the results we can see that FastCLIP-v3 outperforms OpenCLIP by a large margin. Moreover, from (a) and (b) we observe that the performance of FastCLIP-v3 plateaus at 2 nodes, which verifies that FastCLIP does not require a large amount of computing resources.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
 
-Besides performance on downstream tasks, we also compare training time of OpenCLIP and FastCLIP. The following figure shows the training time of OpenCLIP and three algorithms in the FastCLIP framework in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Each bar is divided into three parts (from top to bottom): computation, pure communication (not overlapped with computation), and others. Subfigures (c) and (d) plot the communication time per iteration. Each bar is divided into two parts (from top to bottom): communication overlapped with computation and pure communication. We can see that FastCLIP has a shorter communication time, which demonstrates the effectiveness of our efficient gradient computation/communication strategy.
+The following figure shows the training time in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Subfigures (c) and (d) plot the communication time per iteration. We can see that FastCLIP has a shorter per-iteration time due to shorter communication time, which demonstrates the effectiveness of our efficient gradient computation/communication strategy.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP, Training time" src="./assets/openclip_fastclip_time_nodes.png" width="600"/></p>
 
@@ -41,7 +66,7 @@ pip install -r requirements-training.txt
 
 ### Training
 
-We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. The following is a sample slurm script to run FastCLIP-v3 on cc3m using 2 nodes and 4 GPUs per node.
+We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. The following is a sample slurm script to run **FastCLIP-v3** on cc3m using 2 nodes and 4 GPUs per node.
 ```bash
 #!/bin/bash -x
 #SBATCH --time=2-00:00:00
@@ -85,7 +110,7 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run OpenCLIP, replace the `srun python -u src/training/main.py` command with
+To run **OpenCLIP**, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
@@ -105,7 +130,7 @@ srun python -u src/training/main.py \
     --lr 1e-3
 ```
 
-To run FastCLIP-v0, replace the `srun python -u src/training/main.py` command with
+To run **FastCLIP-v0**, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
@@ -116,7 +141,7 @@ srun python -u src/training/main.py \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
-    --name medium_openclip \
+    --name medium_fastclipv0 \
     --seed 2024 \
     --profile \
     --wd 0.1 \
@@ -126,7 +151,7 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run FastCLIP-v1, replace the `srun python -u src/training/main.py` command with
+To run **FastCLIP-v1**, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
@@ -137,7 +162,7 @@ srun python -u src/training/main.py \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
-    --name medium_openclip \
+    --name medium_fastclipv1 \
     --seed 2024 \
     --profile \
     --wd 0.1 \
@@ -147,7 +172,7 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run FastCLIP-v2, replace the `srun python -u src/training/main.py` command with
+To run **FastCLIP-v2**, replace the `srun python -u src/training/main.py` command with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
@@ -158,7 +183,7 @@ srun python -u src/training/main.py \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
-    --name medium_openclip \
+    --name medium_fastclipv2 \
     --seed 2024 \
     --profile \
     --wd 0.1 \
@@ -167,7 +192,7 @@ srun python -u src/training/main.py \
     --lr 1e-3 --lr_tau 0.0133 --lr_tau_scheduler const --temperature 0.03 --rho 7.0 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
-**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
 
 ### Evaluation
 
@@ -205,6 +230,6 @@ srun python -u src/training/main.py \
     --name eval_medium_fastclipv3_epoch_37 \
     --seed 2024
 ```
-**Datacomp**: For evaluation on Datacomp Benchmark, please refer to the `Evaluation` section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
+**Datacomp**: For evaluation on the Datacomp benchmark, please refer to the "Evaluation" section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
-**Non-slurm Training**: For non-slurm training, please set `master_addr` manually, change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
