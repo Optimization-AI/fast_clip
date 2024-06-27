@@ -16,50 +16,27 @@
 ### The Proposed FastCLIP Framework
 
 The FastCLIP framework is a general CLIP training framework. It includes 4 algorithms which we name FastCLIP-v0 to FastCLIP-v3. The pseudo-code of FastCLIP is presented below.
-
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
 FastCLIP-v0 to FastCLIP-v3 mainly differ in loss computation and temperature update (Line 9 and Line 11). Specifically, FastCLIP-v0 and FastCLIP-v1 optimizes the Global Contrastive Loss (GCL), which is first used by SogCLR:
-$$\frac{\tau}{|\mathcal{S}|} \sum\nolimits_{i\in \mathcal{S}} \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)\right).   \tag{GCL}$$
+<p align="center"><img alt="GCL Loss" src="./assets/gcl.png" width="600"/></p>
 The difference between v0 and v1 is that in v0 the temperature parameter $\tau$ is learnable and is updated using gradient method, while in v1 the temperature parameter is set to a constant. FastCLIP-v2 optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR:
-$$\begin{aligned}
-        \min_{\tau_1, \tau_2\geq \tau_0}\frac{1}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} &\left(\tau_{1, i}\cdot \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau_{1, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right.\\[-5pt]
-        &\;\;\left.+ \tau_{2, i}\cdot \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau_{2, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right),     \tag{RGCL}
-    \end{aligned}$$
-where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_1 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. In FastCLIP-v2, the temperature parameter is also learnable. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
-$$\min_{\tau\geq \tau_0}\frac{\tau}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} \left( \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_1(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\frac{1}{|\mathcal{S}_{i-}|}+ g_2(\bm{w}, \tau, i, \mathcal{S}_{i-})\right)\right) + 2\rho\tau.    \tag{RGCL-g}$$
+<p align="center"><img alt="RGCL Loss" src="./assets/rgcl.png" width="600"/></p>
+where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. In FastCLIP-v2, the temperature parameter is also learnable. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
+<p align="center"><img alt="RGCL-g Loss" src="./assets/rgclg.png" width="600"/></p>
 The main difference between RGCL and RGCL-g is that RGCL-g unifies the individual temperature parameter in RGCL into a single global temperature. In FastCLIP-v3, the temperature parameter is also learnable. In the following table we provide comparison between different algorithms.
-
-<style>
-    tr:nth-child(4) { background: rgb(240, 240, 240); }
-    tr:nth-child(5) { background: rgb(240, 240, 240); }
-    tr:nth-child(6) { background: rgb(240, 240, 240); }
-    tr:nth-child(7) { background: rgb(240, 240, 240); }
-</style>
-| Algorithm | Loss | FCCO | Distributed | Inner LR Schedule | Temperature Scheme |
-| --- | --- | --- | --- | --- | --- |
-| OpenCLIP | MBCL | :x: | :white_check_mark: | N/A | G, Learnable |
-| SogCLR | GCL | :white_check_mark: | :x: | Constant | G, Constant |
-| iSogCLR | RGCL | :white_check_mark: | :x: | Constant | I, Learnable |
-| FastCLIP-v0 | GCL | :white_check_mark: | :white_check_mark: | Cosine | G, Learnable |
-| FastCLIP-v1 | GCL | :white_check_mark: | :white_check_mark: | Cosine | G, Constant |
-| FastCLIP-v2 | RGCL | :white_check_mark: | :white_check_mark: | Cosine | I, Learnable |
-| FastCLIP-v3 | RGCL-g | :white_check_mark: | :white_check_mark: | Cosine | G, Learnable |
-
+<p align="center"><img alt="Comparison of different algorithms" src="./assets/comparison.png" width="600"/></p>
 Note that OpenCLIP uses the Mini-Batch Contrastive Loss which we omit here for brevity. FCCO denotes finite-sum coupled compositional optimization. Inner LR Schedule denotes the schedule for $\gamma_t$ in Eqn. (2) in Algorithm 1. In Temperature Scheme, G means global temperature while I means individual temperature.
 
 ### Experiment Results
 
 Here we only present part of the results of OpenCLIP vs. FastCLIP-v3. For more results please refer to our paper. The following figure is the average of ImageNet and its variants curves in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings. From the results we can see that FastCLIP-v3 has a significant improvement and speedup over OpenCLIP.
-
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
 
 In the following figure, (a) and (b) are the average of ImageNet and its variants across different number of nodes in the medium-scale and large-scale settings, respectively. while (c) is the ImageNet Top1 accuracy in the xlarge-scale setting (LAION400M, batch size 5120). From the results we can see that FastCLIP-v3 outperforms OpenCLIP by a large margin. Moreover, from (a) and (b) we observe that the performance of FastCLIP-v3 plateaus at 2 nodes, which verifies that FastCLIP does not require a large amount of computing resources.
-
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
 
 The following figure shows the training time in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Subfigures (c) and (d) plot the communication time per iteration. We can see that FastCLIP has a shorter per-iteration time due to shorter communication time, which demonstrates the effectiveness of our efficient gradient computation/communication strategy.
-
 <p align="center"><img alt="OpenCLIP vs. FastCLIP, Training time" src="./assets/openclip_fastclip_time_nodes.png" width="600"/></p>
 
 ## Getting Started
