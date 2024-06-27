@@ -23,11 +23,15 @@ FastCLIP-v0 to FastCLIP-v3 mainly differ in loss computation and temperature upd
 
 <p align="center"><img alt="GCL Loss" src="./assets/gcl.png" width="600"/></p>
 
-The difference between v0 and v1 is that in v0 the temperature parameter $\tau$ is learnable and is updated using gradient method, while in v1 the temperature parameter is set to a constant. FastCLIP-v2 optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR:
+Even though optimizing the same loss, they differ from SogCLR in the schedule of the inner learning rate $\gamma$ in Eqn. (2): SogCLR sets $\gamma_t$ to a constant, while FastCLIP-v0 and v1 update it using a cosine decay schedule. Let $E_{\mathrm{cur}}$ denote the current epoch, and $E$ denote the number of decay epochs, then $\gamma_t$ is given by:
+
+<p align="center"><img alt="Cosine Inner LR Schedule" src="./assets/cosine_gamma.png" width="600"/></p>
+
+The difference between FastCLIP-v0 and v1 lies in the temperature parameter $\tau$. In v0 it is learnable and is updated using gradient method, while in v1 it is set to a constant, as in SogCLR. FastCLIP-v2 optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR:
 
 <p align="center"><img alt="RGCL Loss" src="./assets/rgcl.png" width="600"/></p>
 
-where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. In FastCLIP-v2, the temperature parameter is also learnable. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
+where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. Similarly, the difference between FastCLIP-v2 and iSogCLR lies in the inner learning rate schedule. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
 
 <p align="center"><img alt="RGCL-g Loss" src="./assets/rgclg.png" width="600"/></p>
 
@@ -35,7 +39,7 @@ The main difference between RGCL and RGCL-g is that RGCL-g unifies the individua
 
 <p align="center"><img alt="Comparison of different algorithms" src="./assets/comparison.png" width="600"/></p>
 
-Note that OpenCLIP uses the Mini-Batch Contrastive Loss which we omit here for brevity. FCCO denotes finite-sum coupled compositional optimization. Inner LR Schedule denotes the schedule for $\gamma_t$ in Eqn. (2) in Algorithm 1. In Temperature Scheme, G means global temperature while I means individual temperature.
+Note that OpenCLIP uses the Mini-Batch Contrastive Loss which we omit here for brevity. FCCO denotes finite-sum coupled compositional optimization. In Temperature Scheme, "G" means global temperature while "I" means individual temperature, and "Learnable" means the temperature is updated using gradient computed from their respective loss.
 
 ### Experiment Results
 
