@@ -43,19 +43,19 @@ Note that OpenCLIP uses the Mini-Batch Contrastive Loss (MBCL), which requires a
 
 ### Experiment Results
 
-Next we present the results of FastCLIP vs. OpenCLIP, SogCLR and iSogCLR. For more results please refer to our paper. The following table shows the results of FastCLIP-v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.) in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings.
+Next we present the results of FastCLIP vs. OpenCLIP, SogCLR and iSogCLR. For more results please refer to our paper. The following table shows the results of FastCLIP-v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.) in the medium-scale (**CC3M**, batch size 1024) and large-scale (**CC12M**, batch size 2048) settings.
 
 <p align="center"><img alt="FastCLIP v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.)" src="./assets/gamma_datacomp.png" width="600"/></p>
 
-In the table, "Datacomp" denotes the average performance on the Datacomp benchmark, "IN & Variants" denote the average performance on ImageNet and its variants. The following figure is the average of ImageNet and its variants curves in the medium-scale and large-scale settings.
+The following figure presents the average of **ImageNet and variants** curves of OpenCLIP and FastCLIP-v3 in the medium-scale and large-scale settings.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
 
-In the following figure, (a) and (b) are the average of ImageNet and its variants across different number of nodes in the medium-scale and large-scale settings, respectively. while (c) is the ImageNet Top1 accuracy in the xlarge-scale setting (LAION400M, batch size 5120).
+In the following figure, (a) and (b) are the average of **ImageNet and variants** of OpenCLIP and FastCLIP-v3 across different number of nodes in the medium-scale and large-scale settings, respectively. while (c) is the **ImageNet Top1** accuracy in the xlarge-scale setting (**LAION400M**, batch size 5120).
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
 
-The following figure shows the training time in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Subfigures (c) and (d) plot the communication time per iteration.
+The following figure shows the **training time** in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Subfigures (c) and (d) plot the communication time per iteration.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP, Training time" src="./assets/openclip_fastclip_time_nodes.png" width="600"/></p>
 
