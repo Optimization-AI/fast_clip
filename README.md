@@ -15,35 +15,39 @@
 
 ### The Proposed FastCLIP Framework
 
-The FastCLIP framework is a general CLIP training framework. It includes 4 algorithms which we name FastCLIP-v0 to FastCLIP-v3. The pseudo-code of FastCLIP is presented below.
+The FastCLIP framework is a general CLIP training framework, which includes a family of algorithms differing in loss computation and temperature parameter update. Here we introduce three of them that we name FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
 
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
-FastCLIP-v0 to FastCLIP-v3 mainly differ in loss computation and temperature update (Line 9 and Line 11). Specifically, FastCLIP-v0 and FastCLIP-v1 optimizes the Global Contrastive Loss (GCL), which is first used by SogCLR:
+The three algorithms have different ways of computing the loss and updating the temperature $\tau$ (Line 9 and Line 11 in Algorithm 1). Specifically, **FastCLIP-v1** optimizes the Global Contrastive Loss (GCL), which is first used by SogCLR:
 
 <p align="center"><img alt="GCL Loss" src="./assets/gcl.png" width="600"/></p>
 
-Even though optimizing the same loss, they differ from SogCLR in the schedule of the inner learning rate $\gamma$ in Eqn. (2): SogCLR sets $\gamma_t$ to a constant, while FastCLIP-v0 and v1 update it using a cosine decay schedule. Let $E_{\mathrm{cur}}$ denote the current epoch, and $E$ denote the number of decay epochs, then $\gamma_t$ is given by:
+For $\tau$ update, FastCLIP-v1 sets it to a constant, as in SogCLR. FastCLIP-v1 differs from SogCLR in the schedule of the inner learning rate $\gamma$ in Eqn. (2): SogCLR sets $\gamma_t$ to a constant, while FastCLIP-v1 updates it using a cosine decay schedule: Let $E_{\mathrm{cur}}$ denote the current epoch, and $E$ denote the number of decay epochs, then $\gamma_t$ is set to:
 
 <p align="center"><img alt="Cosine Inner LR Schedule" src="./assets/cosine_gamma.png" width="600"/></p>
 
-The difference between FastCLIP-v0 and v1 lies in the temperature parameter $\tau$. In v0 it is learnable and is updated using gradient method, while in v1 it is set to a constant, as in SogCLR. FastCLIP-v2 optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR:
+**FastCLIP-v2** optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR. In RGCL, the temperature parameter becomes a variable that needs to be optimized. Also, each data point now has its individual temperature parameter, as opposed to the global temperature in GCL. Let $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, then RGCL is defined as:
 
 <p align="center"><img alt="RGCL Loss" src="./assets/rgcl.png" width="600"/></p>
 
-where $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, $\tau_0$ is a small value,  $\rho\geq 0$ is a hyperparameter. Similarly, the difference between FastCLIP-v2 and iSogCLR lies in the inner learning rate schedule. FastCLIP-v3 optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
+where $\tau_0$ is a small value, $\rho\geq 0$ is a hyperparameter. Similarly, the difference between FastCLIP-v2 and iSogCLR lies in the schedule of the inner learning rate $\gamma$, where the former leverages the cosine schedule and the latter uses the constant schedule. **FastCLIP-v3** optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
 
 <p align="center"><img alt="RGCL-g Loss" src="./assets/rgclg.png" width="600"/></p>
 
-The main difference between RGCL and RGCL-g is that RGCL-g unifies the individual temperature parameter in RGCL into a single global temperature. In FastCLIP-v3, the temperature parameter is also learnable. In the following table we provide comparison between different algorithms.
+The main difference between RGCL and RGCL-g is that RGCL-g unifies the individual temperature parameter into a single global temperature. In FastCLIP-v3, the temperature parameter is also learnable. In the following table we provide comparison between different algorithms.
 
 <p align="center"><img alt="Comparison of different algorithms" src="./assets/comparison.png" width="600"/></p>
 
-Note that OpenCLIP uses the Mini-Batch Contrastive Loss which we omit here for brevity. FCCO denotes finite-sum coupled compositional optimization. In Temperature Scheme, "G" means global temperature while "I" means individual temperature, and "Learnable" means the temperature is updated using gradient computed from their respective loss.
+Note that OpenCLIP uses the Mini-Batch Contrastive Loss (MBCL), which requires a large batch size for good performance. "FCCO" means the algorithm leverages finite-sum coupled compositional optimization techniques. "Distributed" means the algorithm is designed for distributed training. In "Temperature Scheme", "G" means global temperature while "I" means individual temperature.
 
 ### Experiment Results
 
-Here we only present part of the results of OpenCLIP vs. FastCLIP-v3. For more results please refer to our paper. The following figure is the average of ImageNet and its variants curves in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings.
+Next we present the results of FastCLIP vs. OpenCLIP, SogCLR and iSogCLR. For more results please refer to our paper. The following table shows the results of FastCLIP-v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.) in the medium-scale (CC3M, batch size 1024) and large-scale (CC12M, batch size 2048) settings.
+
+<p align="center"><img alt="FastCLIP v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.)" src="./assets/gamma_datacomp.png" width="600"/></p>
+
+In the table, "Datacomp" denotes the average performance on the Datacomp benchmark, "IN & Variants" denote the average performance on ImageNet and its variants. The following figure is the average of ImageNet and its variants curves in the medium-scale and large-scale settings.
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
 
