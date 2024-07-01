@@ -13,7 +13,10 @@ import webdataset as wds
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 from torch.utils.data.distributed import DistributedSampler
-from libauc.datasets.webdataset import WebDataset
+try:
+    from libauc.datasets.webdataset import WebDataset
+except ModuleNotFoundError:
+    from webdata import WebDataset
 
 try:
     import horovod.torch as hvd
