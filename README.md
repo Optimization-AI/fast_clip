@@ -15,7 +15,7 @@
 
 ### The Proposed FastCLIP Framework
 
-The FastCLIP framework is an efficient distributed training framework of CLIP models, which includes a family of algorithms differing in loss computation and temperature parameter update. It is powered by advanced finite-sum coupled compositional optimization techniques for optimizing global contrastive losses, which is suitable for training CLIP models with limited compute resources.  Below we introduce three algorithms in this framework which are named FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
+The FastCLIP framework is an efficient distributed training framework of CLIP models, which includes a family of algorithms differing in loss computation and temperature parameter update. It is powered by advanced finite-sum coupled compositional optimization (FCCO) techniques for optimizing global contrastive losses, which is suitable for training CLIP models with limited compute resources.  Below we introduce three algorithms in this framework which are named FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
 
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
