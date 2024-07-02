@@ -11,6 +11,7 @@
     - [Environment Setup](#environment-setup)
     - [Training](#training)
     - [Evaluation](#evaluation)
+- [Citing FastCLIP](#citing-fastclip)
 
 ## Introduction
 
@@ -254,3 +255,15 @@ srun python -u src/training/main.py \
 **Datacomp**: For evaluation on the Datacomp benchmark, please refer to the "Evaluation" section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
 **Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
+
+## Citing FastCLIP
+
+If you find FastCLIP useful in your research, please consider citing the following paper:
+```bibtex
+@article{wei2024fastclip,
+  title={FastCLIP: A Suite of Optimization Techniques to Accelerate CLIP Training with Limited Resources},
+  author={Wei, Xiyuan and Ye, Fanjiang and Yonay, Ori and Chen, Xingyu and Sun, Baixi and Tao, Dingwen and Yang, Tianbao},
+  journal={arXiv preprint arXiv:2407.01445},
+  year={2024}
+}
+```
