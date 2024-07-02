@@ -17,7 +17,7 @@
 
 ### The Proposed FastCLIP Framework
 
-The FastCLIP framework is an efficient distributed training framework of CLIP models, which includes a family of algorithms differing in loss computation and temperature parameter update. It is powered by advanced finite-sum coupled compositional optimization (FCCO) techniques for optimizing global contrastive losses, which is suitable for training CLIP models with limited compute resources.  Below we introduce three algorithms in this framework which are named FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
+The FastCLIP framework is an efficient distributed training framework of CLIP models, which includes a family of algorithms differing in loss computation and temperature parameter update. It is powered by advanced finite-sum coupled compositional optimization (FCCO) [[4]](#references) techniques for optimizing global contrastive losses, which is suitable for training CLIP models with limited compute resources.  Below we introduce three algorithms in this framework which are named FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
 
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
@@ -68,6 +68,8 @@ The following figure shows the **training time** in the medium-scale and large-s
 [2] Zi-Hao Qiu, Quanqi Hu, Zhuoning Yuan, Denny Zhou, Lijun Zhang, and Tianbao Yang. Not all semantics are created equal: Contrastive self-supervised learning with automatic temperature individualization. In *Proceedings of the 40th International Conference on Machine Learning*, volume 202 of *Proceedings of Machine Learning Research*, pages 28389–28421. PMLR, 23–29 Jul 2023. URL https://proceedings.mlr.press/v202/qiu23a.html.
 
 [3] Gabriel Ilharco, Mitchell Wortsman, Ross Wightman, Cade Gordon, Nicholas Carlini, Rohan Taori, Achal Dave, Vaishaal Shankar, Hongseok Namkoong, John Miller, Hannaneh Hajishirzi, Ali Farhadi, and Ludwig Schmidt. Openclip. https://doi.org/10.5281/zenodo.5143773, July 2021. URL https://doi.org/10.5281/zenodo.5143773.
+
+[4] Bokun Wang and Tianbao Yang. Finite-sum coupled compositional stochastic optimization: Theory and applications. In *Proceedings of the 39th International Conference on Machine Learning*, volume 162 of *Proceedings of Machine Learning Research*, pages 23292–23317. PMLR, 17–23 Jul 2022. URL https://proceedings.mlr.press/v162/wang22ak.html.
 
 ## Getting Started
 
