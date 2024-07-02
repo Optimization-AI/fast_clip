@@ -15,7 +15,7 @@
 
 ### The Proposed FastCLIP Framework
 
-The FastCLIP framework is a general CLIP training framework, which includes a family of algorithms differing in loss computation and temperature parameter update. Here we introduce three of them that we name FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
+The FastCLIP framework is an efficient distributed training framework of CLIP models, which includes a family of algorithms differing in loss computation and temperature parameter update. Here we introduce three of them that we name FastCLIP-v1 to v3. We first present the pseudo-code of FastCLIP:
 
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
