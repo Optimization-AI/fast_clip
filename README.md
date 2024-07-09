@@ -94,7 +94,7 @@ To set up the environment for training, please
 
 We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. To train on your own data, you need to modify the following options
 
-- `--train-data`: the path to the training data.
+- `--train-data`: the path to the training data, currently only **webdataset** format is supported.
 - `--train-num-samples`: this many samples will be seen for one epoch, we recommend to set it to the actual size of the dataset.
 - `--data_size`: the original size of the dataset, this may take a value different from `--train-num-samples`. In the case of CC3M, its metadata contains 3318333 image-URL/caption pairs, but we were only able to down 2723840 of them. So we set `--data_size` to 3318333 and set `--train-num-samples` to 2723848.
 - `--epochs`: for this many epochs the model will be trained.
