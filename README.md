@@ -92,9 +92,17 @@ To set up the environment for training, please
 
 ### Training
 
-We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. The following is a sample slurm script to run **FastCLIP-v3** on cc3m using 2 nodes and 4 GPUs per node.
+We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. To train on your own data, you need to modify the following options
+
+- `--train-data`: the path to the training data.
+- `--train-num-samples`: this many samples will be seen for one epoch, we recommend to set it to the actual size of the dataset.
+- `--data_size`: the original size of the dataset, this may take a value different from `--train-num-samples`. In the case of CC3M, its metadata contains 3318333 image-URL/caption pairs, but we were only able to down 2723840 of them. So we set `--data_size` to 3318333 and set `--train-num-samples` to 2723848.
+- `--epochs`: for this many epochs the model will be trained.
+- `--gamma_decay_epochs`: for this many epochs $\gamma$ will decrease from 1.0 to `--gamma`. We recommend to set it to half of `--epochs`.
+
+The following is a sample slurm script to run **FastCLIP-v3** on cc3m using 2 nodes and 4 GPUs per node.
 ```bash
-#!/bin/bash -x
+#!/bin/bash
 #SBATCH --time=2-00:00:00
 #SBATCH --mem=120G
 #SBATCH --nodes=2
@@ -224,7 +232,7 @@ srun python -u src/training/main.py \
 
 **ImageNet-1k**: The following is a sample slurm script to evaluate a trained CLIP model (specified by `--resume`) on ImageNet-1k.
 ```bash
-#!/bin/bash -x
+#!/bin/bash
 #SBATCH --time=01:00:00
 #SBATCH --mem=20G
 #SBATCH --nodes=1
