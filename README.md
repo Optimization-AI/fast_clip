@@ -92,7 +92,7 @@ To set up the environment for training, please
 
 ### Training
 
-We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For non-slurm instructions, please refer to the end of this subsection. To train on your own data, you need to modify the following options
+We present sample slurm scripts to run OpenCLIP and FastCLIP-v0 to v3. For non-slurm instructions, please refer to the end of this subsection. To train on your own data, you need to modify the following options
 
 - `--train-data`: the path to the training data, currently only **webdataset** format is supported.
 - `--train-num-samples`: this many samples will be seen for one epoch, we recommend to set it to the actual size of the dataset.
@@ -100,7 +100,9 @@ We present sample scripts to run OpenCLIP and FastCLIP-v0 to v3 using slurm. For
 - `--epochs`: for this many epochs the model will be trained.
 - `--gamma_decay_epochs`: for this many epochs $\gamma$ will decrease from 1.0 to `--gamma`. We recommend to set it to half of `--epochs`.
 
-The following is a sample slurm script to run **FastCLIP-v3** on cc3m using 2 nodes and 4 GPUs per node.
+<details open>
+    <summary>Sample script to run <b>FastCLIP-v3</b> on cc3m using 8 GPUs (2 nodes and 4 GPUs per node)</summary>
+
 ```bash
 #!/bin/bash
 #SBATCH --time=2-00:00:00
@@ -130,7 +132,7 @@ srun python -u src/training/main.py \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
     --warmup 10000 \
-    --batch-size 256 \
+    --batch-size 128 \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
@@ -144,14 +146,19 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run **OpenCLIP**, replace the `srun python -u src/training/main.py` command with
+</details>
+
+<details>
+    <summary>Sample script to run <b>OpenCLIP</b> on cc3m using 8 GPUs (click to expand):</summary>
+
+Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
     --warmup 10000 \
-    --batch-size 256 \
+    --batch-size 128 \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
@@ -164,14 +171,19 @@ srun python -u src/training/main.py \
     --lr 1e-3
 ```
 
-To run **FastCLIP-v0**, replace the `srun python -u src/training/main.py` command with
+</details>
+
+<details>
+    <summary>Sample script to run <b>FastCLIP-v0</b> on cc3m using 8 GPUs (click to expand):</summary>
+
+Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
     --warmup 10000 \
-    --batch-size 256 \
+    --batch-size 128 \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
@@ -185,14 +197,19 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run **FastCLIP-v1**, replace the `srun python -u src/training/main.py` command with
+</details>
+
+<details>
+    <summary>Sample script to run <b>FastCLIP-v1</b> on cc3m using 8 GPUs (click to expand):</summary>
+
+Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
     --warmup 10000 \
-    --batch-size 256 \
+    --batch-size 128 \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
@@ -206,14 +223,19 @@ srun python -u src/training/main.py \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
 
-To run **FastCLIP-v2**, replace the `srun python -u src/training/main.py` command with
+</details>
+
+<details>
+    <summary>Sample script to run <b>FastCLIP-v2</b> on cc3m using 8 GPUs (click to expand):</summary>
+
+Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
     --warmup 10000 \
-    --batch-size 256 \
+    --batch-size 128 \
     --epochs 37 \
     --workers 6 \
     --model RN50 \
@@ -226,11 +248,42 @@ srun python -u src/training/main.py \
     --lr 1e-3 --lr_tau 0.0133 --lr_tau_scheduler const --temperature 0.03 --rho 7.0 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 18
 ```
+
+</details>
+
+<details>
+    <summary>Sample script to run <b>FastCLIP-v3</b> on <b>cc12m</b> using 8 GPUs (click to expand):</summary>
+
+Replace the `srun python -u src/training/main.py` command in the cc3m script with
+```bash
+srun python -u src/training/main.py \
+    --save-frequency 1 \
+    --train-data './datasets/cc12m_webdataset/cc12m/{00000..01242}.tar' \
+    --train-num-samples 9187328 --data_size 12423374 \
+    --warmup 10000 \
+    --batch-size 256 \
+    --epochs 33 \
+    --workers 6 \
+    --model ViT-B-32 \
+    --name large_fastclipv3 \
+    --seed 2024 \
+    --profile \
+    --wd 0.1 \
+    --local-loss \
+    --fastclip --multiply_tau --temperature_scheme global_learnable \
+    --lr 4e-4 --lr_tau 1e-4 --lr_tau_scheduler step_thresh --rho 8.5 \
+    --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 16
+```
+
+</details>
+
 **Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
 
 ### Evaluation
 
-**ImageNet-1k**: The following is a sample slurm script to evaluate a trained CLIP model (specified by `--resume`) on ImageNet-1k.
+<details open>
+    <summary>Sample slurm script to evaluate a trained CLIP model (specified by `--resume`) on <b>ImageNet-1k</b>:</summary>
+
 ```bash
 #!/bin/bash
 #SBATCH --time=01:00:00
@@ -264,6 +317,9 @@ srun python -u src/training/main.py \
     --name eval_medium_fastclipv3_epoch_37 \
     --seed 2024
 ```
+
+</details>
+
 **Datacomp**: For evaluation on the Datacomp benchmark, please refer to the "Evaluation" section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
 **Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
