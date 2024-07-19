@@ -282,7 +282,7 @@ srun python -u src/training/main.py \
 ### Evaluation
 
 <details open>
-    <summary>Sample slurm script to evaluate a trained CLIP model (specified by `--resume`) on <b>ImageNet-1k</b>:</summary>
+    <summary>Sample slurm script to evaluate a trained CLIP model (specified by <code>--resume</code>) on <b>ImageNet-1k</b>:</summary>
 
 ```bash
 #!/bin/bash
