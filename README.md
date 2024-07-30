@@ -338,7 +338,7 @@ srun python -u src/training/main.py \
     --stop_epochs 3
 ```
 
-We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-6 (default 1e-14) after 18 epochs. This is done by specifying `--fastclip_eps 1e-6`.
+We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-8 (default 1e-14) after 18 epochs. This is done by specifying `--fastclip_eps 1e-8`.
 
 </details>
 
