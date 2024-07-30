@@ -425,7 +425,7 @@ def main(args):
         # NOTE for const and step, we set warmup to 0
         for lr_scheduler, group, lr_l in zip([args.lr_scheduler, args.lr_tau_scheduler], [other_groups, logit_scale_group], [lr_list, lr_tau_list]):
             if lr_scheduler == "cosine":
-                sche = cosine_lr(group, lr_l, args.warmup, total_steps)
+                sche = cosine_lr(group, lr_l, args.warmup, total_steps, args.lr_min)
             elif lr_scheduler == "const":
                 sche = const_lr(group, lr_l, 0, total_steps)
             elif lr_scheduler == "const-cooldown":

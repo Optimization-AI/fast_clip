@@ -445,12 +445,15 @@ def parse_args(args):
     
     parser.add_argument("--optimizer", type=str, default="adamw", help="Optimizer to use, can be ['adamw', 'lamb'].")
     parser.add_argument("--lr_tau", type=float, default=-1.0,
-                        help="Learning for the temperature parameter. If < 0, will be set to lr of the model.")
+                        help="Learning rate of the temperature parameter. If < 0, will be set to lr of the model.")
     parser.add_argument("--lr_tau_scheduler", type=str, default="cosine", help="Learning rate scheduler for tau.")
     parser.add_argument("--temperature_scheme", type=str, default="global_learnable",
                         help=("Temperature scheme for FastCLIP. Combination of"
                               " ['global', 'individual'] (only works for FastCLIP) and ['learnable', 'constant']."))
     parser.add_argument("--profile", default=False, action="store_true", help="Whether to profile training stats.")
+    parser.add_argument("--lr_min", type=float, default=0.0,
+                        help=("The minimum learning rate of the model and the temperature parameter."
+                              " Only works when using the cosine scheduler."))
 
     # fastclip
     parser.add_argument("--fastclip", default=False, action="store_true", help="Whether to use FastCLIP losses.")
