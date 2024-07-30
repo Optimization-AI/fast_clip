@@ -114,7 +114,7 @@ We present sample slurm scripts to run OpenCLIP and FastCLIP-v0 to v3. For non-s
 - `--gamma_decay_epochs`: for this many epochs $\gamma$ will decrease from 1.0 to `--gamma`. We recommend to set it to half of `--epochs`.
 
 <details open>
-    <summary>Sample script to run <b>FastCLIP-v3</b> on cc3m using 8 GPUs (2 nodes and 4 GPUs per node)</summary>
+    <summary>Sample script to run <b>FastCLIP-v3</b> on CC3M using 8 GPUs (2 nodes and 4 GPUs per node)</summary>
 
 ```bash
 #!/bin/bash
@@ -162,7 +162,7 @@ srun python -u src/training/main.py \
 </details>
 
 <details>
-    <summary>Sample script to run <b>OpenCLIP</b> on cc3m using 8 GPUs (click to expand):</summary>
+    <summary>Sample script to run <b>OpenCLIP</b> on CC3M using 8 GPUs (click to expand):</summary>
 
 Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
@@ -187,7 +187,7 @@ srun python -u src/training/main.py \
 </details>
 
 <details>
-    <summary>Sample script to run <b>FastCLIP-v0</b> on cc3m using 8 GPUs (click to expand):</summary>
+    <summary>Sample script to run <b>FastCLIP-v0</b> on CC3M using 8 GPUs (click to expand):</summary>
 
 Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
@@ -213,7 +213,7 @@ srun python -u src/training/main.py \
 </details>
 
 <details>
-    <summary>Sample script to run <b>FastCLIP-v1</b> on cc3m using 8 GPUs (click to expand):</summary>
+    <summary>Sample script to run <b>FastCLIP-v1</b> on CC3M using 8 GPUs (click to expand):</summary>
 
 Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
@@ -239,7 +239,7 @@ srun python -u src/training/main.py \
 </details>
 
 <details>
-    <summary>Sample script to run <b>FastCLIP-v2</b> on cc3m using 8 GPUs (click to expand):</summary>
+    <summary>Sample script to run <b>FastCLIP-v2</b> on CC3M using 8 GPUs (click to expand):</summary>
 
 Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
@@ -265,9 +265,9 @@ srun python -u src/training/main.py \
 </details>
 
 <details>
-    <summary>Sample script to run <b>FastCLIP-v3</b> on <b>cc12m</b> using 8 GPUs (click to expand):</summary>
+    <summary>Sample script to run <b>FastCLIP-v3</b> on <b>CC12M</b> using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the cc3m script with
+Replace the `srun python -u src/training/main.py` command in the CC3M script with
 ```bash
 srun python -u src/training/main.py \
     --save-frequency 1 \
@@ -287,6 +287,58 @@ srun python -u src/training/main.py \
     --lr 4e-4 --lr_tau 1e-4 --lr_tau_scheduler step_thresh --rho 8.5 \
     --gamma 0.2 --gamma_schedule cosine --gamma_decay_epochs 16
 ```
+
+</details>
+
+<details>
+    <summary>Sample script to run <b>FastCLIP-v3</b> on <b>LAION400M</b> using 16 GPUs (click to expand):</summary>
+
+Many slurm systems have a limit on the running time of a job (e.g., 2 days), which is far less than the time required for 30 epochs on LAION400M. We recommend to leverage the `--stop_epochs` and `--resume` options. By setting `--stop_epochs`, the training will stop after the specified epoch. And by setting `--resume`, the training will resume at the specified checkpoint. Then the user can construct an array of jobs such that the `--resume` of a job points to the checkpoint where its preceding job stops. Below is a sample script that stops after the third epoch.
+```bash
+#!/bin/bash
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=120G
+#SBATCH --nodes=4
+#SBATCH --gres=gpu:4
+#SBATCH --ntasks-per-node=4
+#SBATCH --cpus-per-task=6
+#SBATCH --wait-all-nodes=1
+#SBATCH --job-name=fastclipv3
+#SBATCH --partition=gpu
+#SBATCH --output=%x_%j.log
+
+source ~/.bashrc
+conda activate fastclip
+
+master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+export MASTER_ADDR=$master_addr
+export MASTER_PORT=12805
+
+export CUDA_VISIBLE_DEVICES='0,1,2,3'
+export PYTHONPATH="$PYTHONPATH:$PWD/src"
+export HUGGINGFACE_HUB_CACHE='./checkpoints/huggingface'
+
+srun python -u src/training/main.py \
+    --save-frequency 1 \
+    --train-data './datasets/laion400m/laion400m-data/{00000..41407}.tar' \
+    --train-num-samples 315658316 --data_size 414080000 \
+    --warmup 13200 \
+    --batch-size 320 \
+    --epochs 30 \
+    --workers 6 \
+    --model ViT-B-16 \
+    --name xlarge_fastclipv3 \
+    --seed 2024 \
+    --profile \
+    --wd 0.2 \
+    --local-loss \
+    --fastclip --multiply_tau --temperature_scheme global_learnable \
+    --lr 2e-4 --lr_min 4e-5 --lr_tau 5e-5 --lr_tau_scheduler step_thresh --rho 16.0 \
+    --gamma 0.8 --gamma_schedule cosine --gamma_decay_epochs 10 \
+    --stop_epochs 3
+```
+
+We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-6 (default 1e-14) after 18 epochs. This is done by specifying `--fastclip_eps 1e-6`.
 
 </details>
 
