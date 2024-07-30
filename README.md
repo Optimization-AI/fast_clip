@@ -58,17 +58,19 @@ Note that OpenCLIP [[3]](#references) uses the Mini-Batch Contrastive Loss (MBCL
 
 ### Experiment Results
 
-Next we present the results of FastCLIP vs. OpenCLIP, SogCLR and iSogCLR. For more results please refer to our paper. The following table shows the results of FastCLIP-v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.) in the medium-scale (**CC3M**, batch size 1024) and large-scale (**CC12M**, batch size 2048) settings.
+Next we present the results of FastCLIP vs. OpenCLIP, SogCLR and iSogCLR. For more results please refer to our paper.
 
-<p align="center"><img alt="FastCLIP v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.)" src="./assets/gamma_datacomp.png" width="600"/></p>
+**FastCLIP vs. OpenCLIP**: We plot the **ImageNet Top1** accuracy curve of OpenCLIP and FastCLIP-v3 in the xlarge-scale setting (**LAION400M**, batch size 5120) in subfigure (a) and the average of **ImageNet and variants** performance across different number of nodes in the medium-scale (**CC3M**, batch size 1024) and large-scale (**CC12M**, batch size 2048) settings in subfigures (b) and (c), respectively.
 
-The following figure presents the average of **ImageNet and variants** curves of OpenCLIP and FastCLIP-v3 in the medium-scale and large-scale settings.
+<p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
+
+We also plot the average of **ImageNet and variants** curves of OpenCLIP and FastCLIP-v3 in the medium-scale and large-scale settings (corresponding to subfigures (b) and (c) above).
 
 <p align="center"><img alt="OpenCLIP vs. FastCLIP-v3" src="./assets/openclip_fastclipv3_in_variants_curve.png" width="600"/></p>
 
-In the following figure, (a) and (b) are the average of **ImageNet and variants** of OpenCLIP and FastCLIP-v3 across different number of nodes in the medium-scale and large-scale settings, respectively. while (c) is the **ImageNet Top1** accuracy in the xlarge-scale setting (**LAION400M**, batch size 5120).
+**FastCLIP vs. SogCLR, iSogCLR**: The following table shows the results of FastCLIP-v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.) in the medium-scale and large-scale settings.
 
-<p align="center"><img alt="OpenCLIP vs. FastCLIP-v3, Scaling performance" src="./assets/openclip_fastclipv3_in_variants_nodes.png" width="600"/></p>
+<p align="center"><img alt="FastCLIP v1 (FastCLIP-v2, resp.) vs. SogCLR (iSogCLR, resp.)" src="./assets/gamma_datacomp.png" width="600"/></p>
 
 The following figure shows the **training time** in the medium-scale and large-scale settings. Subfigures (a) and (b) plot the per-iteration training time. Subfigures (c) and (d) plot the communication time per iteration.
 
