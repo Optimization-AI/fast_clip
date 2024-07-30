@@ -517,6 +517,9 @@ def main(args):
         prof = None
 
     for epoch in range(start_epoch, args.epochs):
+        if args.stop_epochs > 0 and epoch >= args.stop_epochs:
+            logging.info(f'Stop training at epoch {epoch}.')
+            break
         if is_master(args):
             logging.info(f'Start epoch {epoch}')
 

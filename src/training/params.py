@@ -454,6 +454,9 @@ def parse_args(args):
     parser.add_argument("--lr_min", type=float, default=0.0,
                         help=("The minimum learning rate of the model and the temperature parameter."
                               " Only works when using the cosine scheduler."))
+    parser.add_argument("--stop_epochs", type=int, default=-1,
+                        help=("The training will stop after this epoch. Useful when the training needs"
+                              " to be split into several parts. If < 0, will stop after --epochs"))
 
     # fastclip
     parser.add_argument("--fastclip", default=False, action="store_true", help="Whether to use FastCLIP losses.")
