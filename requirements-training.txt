@@ -1,7 +1,6 @@
--f https://download.pytorch.org/whl/torch_stable.html
 numpy<2.0.0
-torch==2.2.2+cu118
-torchvision==0.17.2+cu118
+torch==2.1.0.post2+cxx11.abi
+torchvision==0.16.0.post2+cxx11.abi
 webdataset>=0.2.5
 regex
 ftfy
@@ -12,5 +11,7 @@ huggingface_hub
 transformers
 timm>=0.9.5
 fsspec
-libauc
+libauc=1.3.3
 jsonargparse
+intel-extension-for-pytorch==2.1.30+xpu
+oneccl-bind-pt==2.1.300+xpu
