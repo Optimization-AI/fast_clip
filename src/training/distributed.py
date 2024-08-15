@@ -9,6 +9,15 @@ try:
 except ImportError:
     hvd = None
 
+import traceback
+try:
+    import intel_extension_for_pytorch as ipex
+    import oneccl_bindings_for_pytorch
+    device_type = "xpu"
+except ImportError:
+    print(traceback.format_exc())
+    device_type = "gpu"
+
 
 def is_global_master(args):
     return args.rank == 0
@@ -68,6 +77,7 @@ def init_distributed_device(args):
     args.world_size = 1
     args.rank = 0  # global rank
     args.local_rank = 0
+    args.device_type = device_type
     if args.horovod:
         assert hvd is not None, "Horovod is not installed"
         hvd.init()
@@ -108,6 +118,8 @@ def init_distributed_device(args):
         else:
             device = 'cuda:0'
         torch.cuda.set_device(device)
+    elif args.device_type == "xpu":
+        device = "xpu:%d" % args.local_rank
     else:
         device = 'cpu'
     args.device = device
