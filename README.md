@@ -89,7 +89,7 @@ To set up the environment for training, please
     ```bash
     conda create -n fastclip python=3.11
     conda activate fastclip
-    pip install -r requirements-training.txt
+    pip install -r requirements-training.txt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
     ```
 
 ### Training
@@ -115,21 +115,32 @@ We present sample slurm scripts to run OpenCLIP and FastCLIP-v0 to v3. For non-s
 #SBATCH --cpus-per-task=6
 #SBATCH --wait-all-nodes=1
 #SBATCH --job-name=fastclipv3
-#SBATCH --partition=gpu
+#SBATCH --partition=pvc
 #SBATCH --output=%x_%j.log
 
+##### load intel lib
+oneapi_2024_0='/sw/hprc/sw/oneAPI/2024.0'
+oneapi_2024_1='/sw/hprc/sw/oneAPI/2024.1'
+source "${oneapi_2024_1}"/compiler/latest/env/vars.sh
+source "${oneapi_2024_0}"/mkl/latest/env/vars.sh
+source "${oneapi_2024_1}"/ccl/latest/env/vars.sh
+source "${oneapi_2024_1}"/mpi/latest/env/vars.sh
+
+##### activate conda env
 source ~/.bashrc
 conda activate fastclip
 
+##### distributed training
 master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 export MASTER_ADDR=$master_addr
 export MASTER_PORT=12805
 
-export CUDA_VISIBLE_DEVICES='0,1,2,3'
+##### program-specfic environment variable
 export PYTHONPATH="$PYTHONPATH:$PWD/src"
 export HUGGINGFACE_HUB_CACHE='./checkpoints/huggingface'
 
-srun python -u src/training/main.py \
+world_size=8
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
@@ -137,6 +148,7 @@ srun python -u src/training/main.py \
     --batch-size 128 \
     --epochs 37 \
     --workers 6 \
+    --dist-backend ccl \
     --model RN50 \
     --name medium_fastclipv3 \
     --seed 2024 \
@@ -153,9 +165,9 @@ srun python -u src/training/main.py \
 <details>
     <summary>Sample script to run <b>OpenCLIP</b> on CC3M using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
+Replace the `mpirun -n "${world_size}" python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
-srun python -u src/training/main.py \
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
@@ -163,6 +175,7 @@ srun python -u src/training/main.py \
     --batch-size 128 \
     --epochs 37 \
     --workers 6 \
+    --dist-backend ccl \
     --model RN50 \
     --name medium_openclip \
     --seed 2024 \
@@ -178,9 +191,9 @@ srun python -u src/training/main.py \
 <details>
     <summary>Sample script to run <b>FastCLIP-v0</b> on CC3M using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
+Replace the `mpirun -n "${world_size}" python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
-srun python -u src/training/main.py \
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
@@ -188,6 +201,7 @@ srun python -u src/training/main.py \
     --batch-size 128 \
     --epochs 37 \
     --workers 6 \
+    --dist-backend ccl \
     --model RN50 \
     --name medium_fastclipv0 \
     --seed 2024 \
@@ -204,9 +218,9 @@ srun python -u src/training/main.py \
 <details>
     <summary>Sample script to run <b>FastCLIP-v1</b> on CC3M using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
+Replace the `mpirun -n "${world_size}" python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
-srun python -u src/training/main.py \
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
@@ -214,6 +228,7 @@ srun python -u src/training/main.py \
     --batch-size 128 \
     --epochs 37 \
     --workers 6 \
+    --dist-backend ccl \
     --model RN50 \
     --name medium_fastclipv1 \
     --seed 2024 \
@@ -230,9 +245,9 @@ srun python -u src/training/main.py \
 <details>
     <summary>Sample script to run <b>FastCLIP-v2</b> on CC3M using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the FastCLIP-v3 script with
+Replace the `mpirun -n "${world_size}" python -u src/training/main.py` command in the FastCLIP-v3 script with
 ```bash
-srun python -u src/training/main.py \
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc3m_webdataset/cc3m_train/{00000..00331}.tar' \
     --train-num-samples 2723840 --data_size 3318333 \
@@ -240,6 +255,7 @@ srun python -u src/training/main.py \
     --batch-size 128 \
     --epochs 37 \
     --workers 6 \
+    --dist-backend ccl \
     --model RN50 \
     --name medium_fastclipv2 \
     --seed 2024 \
@@ -256,9 +272,9 @@ srun python -u src/training/main.py \
 <details>
     <summary>Sample script to run <b>FastCLIP-v3</b> on <b>CC12M</b> using 8 GPUs (click to expand):</summary>
 
-Replace the `srun python -u src/training/main.py` command in the CC3M script with
+Replace the `mpirun -n "${world_size}" python -u src/training/main.py` command in the CC3M script with
 ```bash
-srun python -u src/training/main.py \
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/cc12m_webdataset/cc12m/{00000..01242}.tar' \
     --train-num-samples 9187328 --data_size 12423374 \
@@ -266,6 +282,7 @@ srun python -u src/training/main.py \
     --batch-size 256 \
     --epochs 33 \
     --workers 6 \
+    --dist-backend ccl \
     --model ViT-B-32 \
     --name large_fastclipv3 \
     --seed 2024 \
@@ -293,21 +310,32 @@ Many slurm systems have a limit on the running time of a job (e.g., 2 days), whi
 #SBATCH --cpus-per-task=6
 #SBATCH --wait-all-nodes=1
 #SBATCH --job-name=fastclipv3
-#SBATCH --partition=gpu
+#SBATCH --partition=pvc
 #SBATCH --output=%x_%j.log
 
+##### load intel lib
+oneapi_2024_0='/sw/hprc/sw/oneAPI/2024.0'
+oneapi_2024_1='/sw/hprc/sw/oneAPI/2024.1'
+source "${oneapi_2024_1}"/compiler/latest/env/vars.sh
+source "${oneapi_2024_0}"/mkl/latest/env/vars.sh
+source "${oneapi_2024_1}"/ccl/latest/env/vars.sh
+source "${oneapi_2024_1}"/mpi/latest/env/vars.sh
+
+##### activate conda env
 source ~/.bashrc
 conda activate fastclip
 
+##### distributed training
 master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 export MASTER_ADDR=$master_addr
 export MASTER_PORT=12805
 
-export CUDA_VISIBLE_DEVICES='0,1,2,3'
+##### program-specfic environment variable
 export PYTHONPATH="$PYTHONPATH:$PWD/src"
 export HUGGINGFACE_HUB_CACHE='./checkpoints/huggingface'
 
-srun python -u src/training/main.py \
+world_size=16
+mpirun -n "${world_size}" python -u src/training/main.py \
     --save-frequency 1 \
     --train-data './datasets/laion400m/laion400m-data/{00000..41407}.tar' \
     --train-num-samples 315658316 --data_size 414080000 \
@@ -315,6 +343,7 @@ srun python -u src/training/main.py \
     --batch-size 320 \
     --epochs 30 \
     --workers 6 \
+    --dist-backend ccl \
     --model ViT-B-16 \
     --name xlarge_fastclipv3 \
     --seed 2024 \
@@ -331,7 +360,7 @@ We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-8 (default 
 
 </details>
 
-**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `cd src && torchrun --nproc_per_node=4 --rdzv_endpoint=$master_addr -m training.main`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), set the environment variable `WORLD_SIZE`, and run the above script with `/bin/bash`.
 
 ### Evaluation
 
@@ -347,20 +376,26 @@ We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-8 (default 
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=6
 #SBATCH --job-name=eval_fastclip
-#SBATCH --partition=gpu
+#SBATCH --partition=pvc
 #SBATCH --output=%x_%j.log
 
+##### load intel lib
+oneapi_2024_0='/sw/hprc/sw/oneAPI/2024.0'
+oneapi_2024_1='/sw/hprc/sw/oneAPI/2024.1'
+source "${oneapi_2024_1}"/compiler/latest/env/vars.sh
+source "${oneapi_2024_0}"/mkl/latest/env/vars.sh
+source "${oneapi_2024_1}"/ccl/latest/env/vars.sh
+source "${oneapi_2024_1}"/mpi/latest/env/vars.sh
+
+##### activate conda env
 source ~/.bashrc
 conda activate fastclip
 
-master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
-export MASTER_ADDR=$master_addr
-export MASTER_PORT=12802
-
+##### program-specfic environment variable
 export PYTHONPATH="$PYTHONPATH:$PWD/src"
 export HUGGINGFACE_HUB_CACHE='./checkpoints/huggingface'
 
-srun python -u src/training/main.py \
+mpirun -n 1 python -u src/training/main.py \
     --resume ./logs/medium_fastclipv3/checkpoints/epoch_37.pt \
     --zeroshot-frequency 1 \
     --imagenet-val ./datasets/imagenet/val \
@@ -376,7 +411,7 @@ srun python -u src/training/main.py \
 
 **Datacomp**: For evaluation on the Datacomp benchmark, please refer to the "Evaluation" section in the [Datacomp repository](https://github.com/mlfoundations/datacomp?tab=readme-ov-file#evaluation).
 
-**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), change `srun python -u src/training/main.py` to `python src/training/main.py`, and run the above script with `/bin/bash`.
+**Non-slurm Training**: For non-slurm training, please set `master_addr` manually (e.g., `127.0.0.1`), set the environment `WORLD_SIZE`, and run the above script with `/bin/bash`.
 
 ## Citing FastCLIP
 
