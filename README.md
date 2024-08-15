@@ -24,32 +24,21 @@ The FastCLIP framework is an efficient distributed training framework of CLIP mo
 <p align="center"><img alt="Pseudo-code of FastCLIP" src="./assets/fastclip_algorithm.png" width="600"/></p>
 
 The three algorithms have different ways of computing the loss and updating the temperature $\tau$ (Line 9 and Line 11 in Algorithm 1). Specifically, **FastCLIP-v1** optimizes the Global Contrastive Loss (GCL), which is first used by SogCLR [[1]](#references):
-```math
-\begin{equation}  \tag{GCL}
-    \frac{\tau}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} \left( \log\left(\varepsilon+ g_1(\boldsymbol{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\varepsilon+ g_2(\boldsymbol{w}, \tau, i, \mathcal{S}_{i-})\right)\right),
-\end{equation}
-```
+
+<p align="center"><img alt="GCL Loss" src="./assets/gcl.png" width="600"/></p>
+
 where $\varepsilon$ is a small constant. For $\tau$ update, FastCLIP-v1 sets it to a constant, as in SogCLR. FastCLIP-v1 differs from SogCLR in the schedule of the inner learning rate $\gamma$ in Eqn. (2) in the algorithm: SogCLR sets $\gamma_t$ to a constant, while FastCLIP-v1 updates it using a cosine decay schedule: Let $E_{\mathrm{cur}}$ denote the current epoch, and $E$ denote the number of decay epochs, then $\gamma_t$ is set to:
-```math
-\begin{equation*}
-    \gamma_{t}= 0.5\cdot\left(1+ \cos\left(\pi\cdot \frac{E_{\mathrm{cur}}}{E}\right)\right)\cdot (1- \gamma_{\mathrm{min}})+ \gamma_{\mathrm{min}}.
-\end{equation*}
-```
+
+<p align="center"><img alt="Cosine Inner LR Schedule" src="./assets/cosine_gamma.png" width="600"/></p>
+
 **FastCLIP-v2** optimizes the Robust Global Contrastive Loss (RGCL), which is first used by iSogCLR [[2]](#references). In RGCL, the temperature parameter becomes a variable that needs to be optimized. Also, each data point now has its individual temperature parameter, as opposed to the global temperature in GCL. Let $\tau_1 =(\tau_{1,1}, \ldots, \tau_{1, n})$, $\tau_2 =(\tau_{2,1}, \ldots, \tau_{2, n})$, then RGCL is defined as:
-```math
-\begin{equation}  \tag{RGCL}
-    \begin{aligned}
-        \min_{\tau_1, \tau_2\geq \tau_0}\frac{1}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} &\left(\tau_{1, i}\cdot \left( \log\left(\varepsilon+ g_1(\boldsymbol{w}, \tau_{1, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right.\\[-5pt]
-        &\;\;\left.+ \tau_{2, i}\cdot \left( \log\left(\varepsilon+ g_2(\boldsymbol{w}, \tau_{2, i}, i, \mathcal{S}_{i-})\right)+ \rho\right)\right),
-    \end{aligned}
-\end{equation}
-```
+
+<p align="center"><img alt="RGCL Loss" src="./assets/rgcl.png" width="600"/></p>
+
 where $\tau_0$ is a small value, $\rho\geq 0$ is a hyperparameter. Similarly, the difference between FastCLIP-v2 and iSogCLR lies in the schedule of the inner learning rate $\gamma$, where the former leverages the cosine schedule and the latter uses the constant schedule. **FastCLIP-v3** optimizes a variant of RGCL which we name RGCL with global temperature (RGCL-g):
-```math
-\begin{equation}    \tag{RGCL-g}
-    \min_{\tau\geq \tau_0}\frac{\tau}{|\mathcal{S}|} \sum_{i\in \mathcal{S}} \left( \log\left(\varepsilon+ g_1(\boldsymbol{w}, \tau, i, \mathcal{S}_{i-})\right)+ \log\left(\varepsilon+ g_2(\boldsymbol{w}, \tau, i, \mathcal{S}_{i-})\right)\right) + 2\rho\tau.
-\end{equation}
-```
+
+<p align="center"><img alt="RGCL-g Loss" src="./assets/rgclg.png" width="600"/></p>
+
 The main difference between RGCL and RGCL-g is that RGCL-g unifies the individual temperature parameter into a single global temperature. In FastCLIP-v3, the temperature parameter is also learnable. In the following table we provide comparison between different algorithms.
 
 <p align="center"><img alt="Comparison of different algorithms" src="./assets/comparison.png" width="600"/></p>
