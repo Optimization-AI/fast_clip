@@ -89,7 +89,7 @@ def init_distributed_device(args):
         os.environ['RANK'] = str(args.rank)
         os.environ['WORLD_SIZE'] = str(args.world_size)
     elif is_using_distributed():
-        if 'SLURM_PROCID' in os.environ:
+        if 'RANK' not in os.environ:
             # DDP via SLURM
             args.local_rank, args.rank, args.world_size = world_info_from_env()
             # SLURM var -> torch.distributed vars in case needed
