@@ -392,15 +392,14 @@ def main(args):
                 loss.u_im = checkpoint["u_im"]
                 loss.u_tt = checkpoint["u_tt"]
                 if "individual" in args.temperature_scheme:
-                    tau_dict = pt_load(f"{args.resume[:-3]}_tau_rank_{args.rank}.pt", map_location='cpu')
-                    loss.tau_im = tau_dict["tau_im"]
-                    loss.tau_tt = tau_dict["tau_tt"]
-                    loss.m_grad_tau_im = tau_dict["m_grad_tau_im"]
-                    loss.m_grad_tau_tt = tau_dict["m_grad_tau_tt"]
-                    loss.v_grad_tau_im = tau_dict["v_grad_tau_im"]
-                    loss.v_grad_tau_tt = tau_dict["v_grad_tau_tt"]
-                    loss.bound_im = tau_dict["bound_im"]
-                    loss.bound_tt = tau_dict["bound_tt"]
+                    loss.tau_im = checkpoint["tau_im"]
+                    loss.tau_tt = checkpoint["tau_tt"]
+                    loss.m_grad_tau_im = checkpoint["m_grad_tau_im"]
+                    loss.m_grad_tau_tt = checkpoint["m_grad_tau_tt"]
+                    loss.v_grad_tau_im = checkpoint["v_grad_tau_im"]
+                    loss.v_grad_tau_tt = checkpoint["v_grad_tau_tt"]
+                    loss.bound_im = checkpoint["bound_im"]
+                    loss.bound_tt = checkpoint["bound_tt"]
             logging.info(f"=> resuming checkpoint '{args.resume}' (epoch {start_epoch})")
         else:
             # loading a bare (model only) checkpoint for fine-tune or evaluation
@@ -531,18 +530,6 @@ def main(args):
             evaluate(model, data, completed_epoch, args, writer)
 
         # Saving checkpoints.
-        if args.fastclip and "individual" in args.temperature_scheme and args.logs and args.logs.lower() != 'none':
-            tau_dict = {"tau_im": loss.tau_im, "tau_tt": loss.tau_tt,
-                        "m_grad_tau_im": loss.m_grad_tau_im, "m_grad_tau_tt": loss.m_grad_tau_tt,
-                        "v_grad_tau_im": loss.v_grad_tau_im, "v_grad_tau_tt": loss.v_grad_tau_tt,
-                        "bound_im": loss.bound_im, "bound_tt": loss.bound_tt}
-            if completed_epoch == args.epochs or (
-                args.save_frequency > 0 and (completed_epoch % args.save_frequency) == 0
-            ):
-                torch.save(
-                    tau_dict,
-                    os.path.join(args.checkpoint_path, f"epoch_{completed_epoch}_tau_rank_{args.rank}.pt"),
-                )
         if args.save_logs:
             checkpoint_dict = {
                 "epoch": completed_epoch,
@@ -555,6 +542,12 @@ def main(args):
             if args.fastclip:
                 checkpoint_dict["u_im"] = loss.u_im
                 checkpoint_dict["u_tt"] = loss.u_tt
+                if "individual" in args.temperature_scheme:
+                    tau_dict = {"tau_im": loss.tau_im, "tau_tt": loss.tau_tt,
+                                "m_grad_tau_im": loss.m_grad_tau_im, "m_grad_tau_tt": loss.m_grad_tau_tt,
+                                "v_grad_tau_im": loss.v_grad_tau_im, "v_grad_tau_tt": loss.v_grad_tau_tt,
+                                "bound_im": loss.bound_im, "bound_tt": loss.bound_tt}
+                    checkpoint_dict.update(tau_dict)
 
             if completed_epoch == args.epochs or (
                 args.save_frequency > 0 and (completed_epoch % args.save_frequency) == 0

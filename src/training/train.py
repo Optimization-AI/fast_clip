@@ -99,6 +99,9 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
         images = images.to(device=device, dtype=input_dtype, non_blocking=True)
         texts = texts.to(device=device, non_blocking=True)
         indices = (image_idx, text_idx)
+        image_idx = image_idx.unsqueeze(-1).to(device=device, dtype=image_idx.dtype, non_blocking=True)
+        text_idx = text_idx.unsqueeze(-1).to(device=device, dtype=text_idx.dtype, non_blocking=True)
+        indices_device = [image_idx, text_idx]
 
         data_time_m.update(time.time() - end)
         optimizer.zero_grad()
@@ -113,29 +116,28 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
                     model_out.update({f'dist_{k}': v for k, v in dist_model_out.items()})
                 if args.fastclip:
                     features = [model_out["image_features"], model_out["text_features"]]
-                    remote_features = all_gather_tuple_tensor(features, args.world_size)
-                    if "global" in args.temperature_scheme:
-                        loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, image_ids, text_ids = loss.local(
-                            features, indices, remote_features, logit_scale, offset)
-                        remote_tau = None
-                        remote_bounds = None
-                    elif "individual" in args.temperature_scheme:
-                        loss1_im, loss1_tt, u_im, u_tt, sim_im, sim_tt, tau_im, tau_tt, bound_im, bound_tt, image_ids, text_ids = loss.local(
-                            features, indices, remote_features, offset)
-                        remote_tau = all_gather_tuple_tensor([tau_im, tau_tt], args.world_size)
-                        remote_bounds = all_gather_tuple_tensor([bound_im, bound_tt], args.world_size)
-                    else:
-                        raise NotImplementedError
-                    remote_u = all_gather_tuple_tensor([u_im, u_tt], args.world_size)
-                    remote_ids = all_gather_tuple_tensor([image_ids, text_ids], args.world_size)
-                    u = (u_im, u_tt)
+                    remote_features = all_gather_tuple_tensor(features, None)
+                    local_args = {"features": features, "indices": indices, "remote_features": remote_features,
+                                  "logit_scale": logit_scale, "offset": offset}
+                    loss1_im, loss1_tt, sim_im, sim_tt, gather_list = loss.local(**local_args)
                     # here sim_im is local_im vs. global_tt, sim_tt is local_tt vs. global_im
                     sim = (sim_tt.T, sim_im.T)
+                    u = gather_list[0:2]
+                    # sync the whole world
+                    remote_gather_list = all_gather_tuple_tensor(gather_list, None)
+                    remote_indices = all_gather_tuple_tensor(indices_device, None)
+                    remote_indices[0] = remote_indices[0].squeeze(-1).to(device="cpu", dtype=torch.int64)
+                    remote_indices[1] = remote_indices[1].squeeze(-1).to(device="cpu", dtype=torch.int64)
+                    loss.set_params(*remote_indices, *remote_gather_list)
+                    remote_u = remote_gather_list[0:2]
+                    if "individual" in args.temperature_scheme:
+                        remote_bounds = remote_gather_list[4:6]
+                        remote_tau = remote_gather_list[6:8]
+                        model_out.update({"remote_tau": remote_tau, "remote_bounds": remote_bounds})
                     model_out.update(
-                        {"features": features, "remote_features": remote_features, "remote_u": remote_u, "remote_ids": remote_ids})
+                        {"features": features, "remote_features": remote_features, "remote_u": remote_u})
                     model_out.update(
                         {"offset": offset, "loss1": (loss1_im, loss1_tt), "u": u, "sim": sim})
-                    model_out.update({"remote_tau": remote_tau, "remote_bounds": remote_bounds})
                 losses = loss(**model_out, output_dict=True)
 
                 total_loss = sum(losses.values())
