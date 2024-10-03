@@ -138,11 +138,16 @@ def all_gather_object(args, obj, dst=0):
         return objects
 
 
-def all_gather_tuple_tensor(tensor_list: List[torch.Tensor], world_size: int):
+def all_gather_tuple_tensor(tensor_list: List[torch.Tensor],
+                            group: dist.ProcessGroup | None = None,
+                            ):
     """all gather m tensors, each of shape n * d, using one all_gather operation"""
+    if not dist.is_initialized():
+        return tensor_list
+    world_size = dist.get_world_size(group)
     tensor = torch.stack(tensor_list)                                               # shape [m*n*d]
     gathered_tensor_list = [torch.empty_like(tensor) for _ in range(world_size)]
-    dist.all_gather(gathered_tensor_list, tensor)
+    dist.all_gather(gathered_tensor_list, tensor, group=group)
     gathered_tensor = torch.stack(gathered_tensor_list).permute((1, 0, 2, 3))       # shape [m*k*n*d]
     return_tensor_list = []
     for i in range(gathered_tensor.shape[0]):
