@@ -321,13 +321,11 @@ srun python -u src/training/main.py \
     --profile \
     --wd 0.2 \
     --local-loss \
-    --fastclip --multiply_tau --temperature_scheme global_learnable \
+    --fastclip --fastclip_eps 1e-6 --multiply_tau --temperature_scheme global_learnable \
     --lr 2e-4 --lr_min 4e-5 --lr_tau 5e-5 --lr_tau_scheduler step_thresh --rho 16.0 \
     --gamma 0.8 --gamma_schedule cosine --gamma_decay_epochs 10 \
     --stop_epochs 3
 ```
-
-We changed the small constant $\varepsilon$ in the RGCL-g loss to 1e-8 (default 1e-14) after 18 epochs. This is done by specifying `--fastclip_eps 1e-8`.
 
 </details>
 
